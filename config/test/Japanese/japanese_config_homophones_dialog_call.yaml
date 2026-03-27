@@ -81,40 +81,29 @@ collocation_corpus_paths:
   - data/japanese/label/label.txt
   - data/japanese/test/test.txt
 
-# Additional normalization rules for noisy dialog-ASR patterns
-no_dict_pre_normalization_rules:
-  - pattern: "(?<![\\u4e00-\\u9fff々ヶ])醫師ました(?![\\u4e00-\\u9fff々ヶ])"
-    repl: "いたしました"
-  - pattern: "(?<![\\u4e00-\\u9fff々ヶ])医師ました(?![\\u4e00-\\u9fff々ヶ])"
-    repl: "いたしました"
-  - pattern: "(?<![\\u4e00-\\u9fff々ヶ])夜宜し(?![\\u4e00-\\u9fff々ヶ])"
-    repl: "よろし"
-  - pattern: "(?<![\\u4e00-\\u9fff々ヶ])あり難う(?![\\u4e00-\\u9fff々ヶ])"
-    repl: "ありがとうございます"
-  - pattern: "(?i)(?<![\\u4e00-\\u9fff々ヶ])patches(?![\\u4e00-\\u9fff々ヶ])"
-    repl: "でも"
-
+# Post-normalization normalization (convert various written forms to standard forms)
+enable_post_normalization: true
 post_normalization_map:
-  医師ました: いたしました
-  医師ます: いたします
-  夜宜し: よろし
-  御伝染: お電話
-  家系させ: かけさせ
-  内検: 内見
-  解いていない: 届いていない
-  勝ってきます: かかってきます
-  工こと: 工事
-  梨: なし
-  蟻: あり
-  あり難う: ありがとうございます
-  只今関: ただいま席
-  関を外し: 席を外し
-  頂いて: いただいて
-  頂く: いただく
-  よろしです: よろしいです
-  貰って: もらって
-  色んな: いろんな
-  書無し: 書きなし
+  "致しました": "いたしました"
+  "致します": "いたします"
+  "下さい": "ください"
+  "宜しい": "よろしい"
+  "有難う": "ありがとう"
+  "頂き": "いただき"
+  "頂く": "いただく"
+  "下さ": "くださ"
+  "無い": "ない"
+  "有り": "あり"
+  "有る": "ある"
+  "居る": "いる"
+  "出来る": "できる"
+  "仕舞": "しま"
+  "事": "こと"
+  "所": "ところ"
+  "分か": "わか"
+  "掛け": "かけ"
+  "掛か": "かか"
+  "来ます": "きます"
 
 # LLM Fallback Prompt (when dictionary doesn't match)
 no_dict_prompt: |

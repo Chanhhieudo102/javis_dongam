@@ -145,25 +145,9 @@ class PipelineCorrector:
         self.strict_reading_ratio = float(verification_cfg.get("strict_reading_ratio", 1.0))
         self.no_dict_prompt_template = str(config.get("no_dict_prompt", "") or "").strip()
         self.no_dict_enable_pre_normalization = bool(config.get("no_dict_enable_pre_normalization", True))
-        default_pre_no_dict_rules = [
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])致しました(?![\u4e00-\u9fff々ヶ])", "repl": "いたしました"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])致します(?![\u4e00-\u9fff々ヶ])", "repl": "いたします"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])下さい(?![\u4e00-\u9fff々ヶ])", "repl": "ください"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])頂いて(?![\u4e00-\u9fff々ヶ])", "repl": "いただいて"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])頂き(?![\u4e00-\u9fff々ヶ])", "repl": "いただき"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])頂く(?![\u4e00-\u9fff々ヶ])", "repl": "いただく"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])有難う(?![\u4e00-\u9fff々ヶ])", "repl": "ありがとう"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])宜しい(?![\u4e00-\u9fff々ヶ])", "repl": "よろしい"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])無い(?![\u4e00-\u9fff々ヶ])", "repl": "ない"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])有り(?![\u4e00-\u9fff々ヶ])", "repl": "あり"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])有る(?![\u4e00-\u9fff々ヶ])", "repl": "ある"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])居る(?![\u4e00-\u9fff々ヶ])", "repl": "いる"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])出来る(?![\u4e00-\u9fff々ヶ])", "repl": "できる"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])事(?![\u4e00-\u9fff々ヶ])", "repl": "こと"},
-            {"pattern": r"(?<![\u4e00-\u9fff々ヶ])所(?![\u4e00-\u9fff々ヶ])", "repl": "ところ"},
-        ]
+
         custom_pre_no_dict_rules = config.get("no_dict_pre_normalization_rules", []) or []
-        raw_pre_no_dict_rules = list(default_pre_no_dict_rules)
+        raw_pre_no_dict_rules = []
         if isinstance(custom_pre_no_dict_rules, list):
             raw_pre_no_dict_rules.extend(custom_pre_no_dict_rules)
         self.no_dict_pre_normalization_rules = []
@@ -176,56 +160,26 @@ class PipelineCorrector:
                 continue
             self.no_dict_pre_normalization_rules.append((pattern, repl))
         self.enable_post_normalization = bool(config.get("enable_post_normalization", True))
-        default_post_map = {
-            "致しました": "いたしました",
-            "致します": "いたします",
-            "下さい": "ください",
-            "宜しい": "よろしい",
-            "有難う": "ありがとう",
-            "頂き": "いただき",
-            "頂く": "いただく",
-            "下さ": "くださ",
-            "無い": "ない",
-            "有り": "あり",
-            "有る": "ある",
-            "居る": "いる",
-            "出来る": "できる",
-            "仕舞": "しま",
-            "事": "こと",
-            "所": "ところ",
-            "分か": "わか",
-            "掛け": "かけ",
-            "掛か": "かか",
-            "来ます": "きます",
-        }
-        custom_post_map = config.get("post_normalization_map", {}) or {}
-        raw_post_map = dict(default_post_map)
-        if isinstance(custom_post_map, dict):
-            raw_post_map.update(custom_post_map)
-        elif isinstance(custom_post_map, list):
-            for item in custom_post_map:
+        # Post-normalization map is now fully driven by config (no hardcoded defaults).
+        post_norm_map = config.get("post_normalization_map", {}) or {}
+        raw_post_map = {}
+        if isinstance(post_norm_map, dict):
+            raw_post_map = dict(post_norm_map)
+        elif isinstance(post_norm_map, list):
+            for item in post_norm_map:
                 if not isinstance(item, dict):
                     continue
                 src = str(item.get("src", "") or "").strip()
                 dst = str(item.get("dst", "") or "").strip()
                 if src and dst and src != dst:
                     raw_post_map[src] = dst
-        if isinstance(raw_post_map, list):
-            normalized_pairs = []
-            for item in raw_post_map:
-                if not isinstance(item, dict):
-                    continue
-                src = str(item.get("src", "") or "").strip()
-                dst = str(item.get("dst", "") or "").strip()
-                if src and dst and src != dst:
-                    normalized_pairs.append((src, dst))
-        else:
-            normalized_pairs = []
-            for src, dst in dict(raw_post_map).items():
-                src_s = str(src or "").strip()
-                dst_s = str(dst or "").strip()
-                if src_s and dst_s and src_s != dst_s:
-                    normalized_pairs.append((src_s, dst_s))
+        # Build normalized_pairs from config (dict format only now)
+        normalized_pairs = []
+        for src, dst in dict(raw_post_map).items():
+            src_s = str(src or "").strip()
+            dst_s = str(dst or "").strip()
+            if src_s and dst_s and src_s != dst_s:
+                normalized_pairs.append((src_s, dst_s))
         self.post_normalization_pairs = sorted(normalized_pairs, key=lambda x: len(x[0]), reverse=True)
         self.no_dict_max_completion_tokens = config.get("max_completion_tokens", 120)
         self.llm_select_max_completion_tokens = config.get("llm_select_max_completion_tokens", 20)
