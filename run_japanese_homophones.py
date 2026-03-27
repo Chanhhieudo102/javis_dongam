@@ -14,14 +14,22 @@ from contextlib import redirect_stdout
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pipeline_correction import PipelineCorrector
 
-# Import WER/CER calculator from compute-wer.py
-tools_dir = os.path.join(os.path.dirname(__file__), 'tools')
-compute_wer_path = os.path.join(tools_dir, 'compute-wer.py')
-spec = importlib.util.spec_from_file_location("compute_wer", compute_wer_path)
-compute_wer = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(compute_wer)
-Calculator = compute_wer.Calculator
-characterize = compute_wer.characterize
+def _load_metric_module(module_name, filename):
+    tools_dir = os.path.join(os.path.dirname(__file__), 'tools')
+    module_path = os.path.join(tools_dir, filename)
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# Use dedicated metric scripts to keep behavior aligned with legacy tools.
+compute_cer = _load_metric_module("compute_cer", "compute-cer.py")
+compute_wer = _load_metric_module("compute_wer", "compute-wer.py")
+CerCalculator = compute_cer.Calculator
+WerCalculator = compute_wer.Calculator
+cer_characterize = compute_cer.characterize
+wer_characterize = compute_wer.characterize
 
 def _normalize_eval_text(text, strip_punctuation=False):
     value = (text or "").strip()
@@ -34,6 +42,22 @@ def _safe_percent(part, whole):
     if whole <= 0:
         return 0.0
     return (part * 100.0) / whole
+
+
+def _calculate_error_rate(labels, results, strip_punctuation, calculator_cls, characterize_fn):
+    calculator = calculator_cls()
+    for sent_id in labels:
+        if sent_id in results:
+            lab = _normalize_eval_text(labels[sent_id], strip_punctuation=strip_punctuation)
+            rec = _normalize_eval_text(results[sent_id], strip_punctuation=strip_punctuation)
+            lab_tokens = characterize_fn(lab)
+            rec_tokens = characterize_fn(rec)
+            calculator.calculate(lab_tokens, rec_tokens)
+
+    overall = calculator.overall()
+    if overall['all'] > 0:
+        return float(overall['ins'] + overall['sub'] + overall['del']) * 100.0 / overall['all']
+    return 0.0
 
 
 def calculate_metrics(result_file, label_file, strip_punctuation=False):
@@ -80,46 +104,29 @@ def calculate_metrics(result_file, label_file, strip_punctuation=False):
             if rec == lab:
                 exact_matches += 1
     
-    # Calculate CER (Character Error Rate)
-    cer_calculator = Calculator()
-    for sent_id in labels:
-        if sent_id in results:
-            lab = _normalize_eval_text(labels[sent_id], strip_punctuation=strip_punctuation)
-            rec = _normalize_eval_text(results[sent_id], strip_punctuation=strip_punctuation)
-            lab_chars = characterize(lab)
-            rec_chars = characterize(rec)
-            cer_calculator.calculate(lab_chars, rec_chars)
-    
-    cer_result = cer_calculator.overall()
-    if cer_result['all'] > 0:
-        cer = float(cer_result['ins'] + cer_result['sub'] + cer_result['del']) * 100.0 / cer_result['all']
-    else:
-        cer = 0.0
-    
-    # Calculate WER (Word Error Rate)
-    wer_calculator = Calculator()
-    for sent_id in labels:
-        if sent_id in results:
-            lab = _normalize_eval_text(labels[sent_id], strip_punctuation=strip_punctuation)
-            rec = _normalize_eval_text(results[sent_id], strip_punctuation=strip_punctuation)
-            lab_chars = characterize(lab)
-            rec_chars = characterize(rec)
-            wer_calculator.calculate(lab_chars, rec_chars)
-    
-    wer_result = wer_calculator.overall()
-    if wer_result['all'] > 0:
-        wer = float(wer_result['ins'] + wer_result['sub'] + wer_result['del']) * 100.0 / wer_result['all']
-    else:
-        wer = 0.0
+    cer = _calculate_error_rate(
+        labels,
+        results,
+        strip_punctuation,
+        CerCalculator,
+        cer_characterize,
+    )
+    wer = _calculate_error_rate(
+        labels,
+        results,
+        strip_punctuation,
+        WerCalculator,
+        wer_characterize,
+    )
     
     return exact_matches, total_sentences, cer, wer
 
 
 def _format_wer_detail(sent_id, label_text, rec_text):
     """Build one utterance-level WER detail block compatible with legacy result file."""
-    calc = Calculator()
-    lab_chars = characterize(label_text)
-    rec_chars = characterize(rec_text)
+    calc = WerCalculator()
+    lab_chars = wer_characterize(label_text)
+    rec_chars = wer_characterize(rec_text)
     result = calc.calculate(list(lab_chars), list(rec_chars))
     n = result["all"]
     errors = result["sub"] + result["del"] + result["ins"]

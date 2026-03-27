@@ -16,30 +16,6 @@ except Exception:
     Groq = None
 
 try:
-    from tools.llm_suggestion_logger import LLMSuggestionLogger, LLMSuggestionFormatter
-except Exception:
-    class LLMSuggestionLogger:
-        def __init__(self, log_dir=None):
-            self.log_dir = log_dir
-
-        def log_suggestion(self, **kwargs):
-            return None
-
-        def verify_suggestion(self, **kwargs):
-            return "unverified", 0.0
-
-        def save_stats(self):
-            return None
-
-        def print_summary(self):
-            return None
-
-    class LLMSuggestionFormatter:
-        @staticmethod
-        def few_shot_homophones():
-            return ""
-
-try:
     from tools.japanese_mecab_helper import JapaneseMorphAnalyzer
 except Exception:
     class JapaneseMorphAnalyzer:
@@ -54,11 +30,6 @@ try:
     import MeCab
 except Exception:
     MeCab = None
-
-try:
-    from tools.japanese_dictionary_loader import JapaneseDictionaryLoader
-except Exception:
-    JapaneseDictionaryLoader = None
 
 class PipelineCorrector:
     def __init__(self, config):
@@ -92,11 +63,6 @@ class PipelineCorrector:
             else:
                 self.no_dict_client = OpenAI(api_key=self.no_dict_api_key, base_url=self.no_dict_base_url, max_retries=0)
         
-        # LLM Suggestion Config
-        llm_suggest_config = config.get("llm_suggest", {})
-        self.allow_llm_suggest = llm_suggest_config.get("allow_llm_suggest", False)
-        self.enable_logging = llm_suggest_config.get("enable_logging", False)
-        self.enable_verification = llm_suggest_config.get("enable_verification", False)
         self.auto_learn_dictionary = config.get("auto_learn_dictionary", True)
         self.no_dict_min_score = config.get("no_dict_min_score", 3)
         self.no_dict_relaxed_margin = config.get("no_dict_relaxed_margin", 2)
@@ -130,9 +96,6 @@ class PipelineCorrector:
         self.no_dict_delegate_to_llm = config.get("no_dict_delegate_to_llm", False)
         self.no_dict_trust_llm_decision = config.get("no_dict_trust_llm_decision", False)
         self.no_dict_allow_sentence_level = config.get("no_dict_allow_sentence_level", True)
-        self.no_dict_sentence_min_similarity = float(config.get("no_dict_sentence_min_similarity", 0.94))
-        self.no_dict_sentence_max_len_delta = int(config.get("no_dict_sentence_max_len_delta", 4))
-        self.no_dict_sentence_max_edit_chars = int(config.get("no_dict_sentence_max_edit_chars", 8))
         self.no_dict_enable_span_guard = config.get("no_dict_enable_span_guard", False)
         self.no_dict_enable_pos_guard = config.get("no_dict_enable_pos_guard", False)
         self.disable_llm_on_rate_limit = config.get("disable_llm_on_rate_limit", True)
@@ -147,7 +110,7 @@ class PipelineCorrector:
         self.dict_recheck_margin = config.get("dict_recheck_margin", 2)
         self.llm_recheck_dict = config.get("llm_recheck_dict", False)
         self.llm_recheck_min_score = config.get("llm_recheck_min_score", 3)
-        self.enable_embedding_recheck = config.get("enable_embedding_recheck", True)
+        self.enable_embedding_recheck = config.get("enable_embedding_recheck", False)
         self.enable_llm_select = bool(config.get("enable_llm_select", False))
         self.llm_skip_tokens = set(config.get("llm_skip_tokens", ["はい", "えっと", "あの", "あ", "うーん"]) or [])
         self.skip_filler_in_dict_stage = bool(config.get("skip_filler_in_dict_stage", True))
@@ -180,9 +143,7 @@ class PipelineCorrector:
         self.verification_engine = verification_cfg.get("engine", "mecab")
         self.check_reading = verification_cfg.get("check_reading", True)
         self.strict_reading_ratio = float(verification_cfg.get("strict_reading_ratio", 1.0))
-        # Optional no-dict free-correction prompt (e.g., chinese-style <改>/<原> format).
-        self.no_dict_prompt = (config.get("no_dict_prompt") or "").strip()
-        self.no_dict_dynamic_few_shot = bool(config.get("no_dict_dynamic_few_shot", True))
+        self.no_dict_prompt_template = str(config.get("no_dict_prompt", "") or "").strip()
         self.no_dict_enable_pre_normalization = bool(config.get("no_dict_enable_pre_normalization", True))
         default_pre_no_dict_rules = [
             {"pattern": r"(?<![\u4e00-\u9fff々ヶ])致しました(?![\u4e00-\u9fff々ヶ])", "repl": "いたしました"},
@@ -270,7 +231,6 @@ class PipelineCorrector:
         self.llm_select_max_completion_tokens = config.get("llm_select_max_completion_tokens", 20)
         self.fast_llm_prompt = config.get("fast_llm_prompt", False)
         self.disable_dictionary_stage = bool(config.get("disable_dictionary_stage", False))
-        self.no_dict_split_word = config.get("split_word", "入力:")
         self.mecab_dicdir = config.get("mecab_dicdir")
         self.homophones_file = config.get("homophones_file", "data/japanese/dictionary/homophones.json")
         self.dict_use_metadata_priority = config.get("dict_use_metadata_priority", True)
@@ -326,9 +286,6 @@ class PipelineCorrector:
         )
         self.runtime_map_blacklist_path = config.get("runtime_map_blacklist_path", "result/runtime_blacklist_homophone.jsonl")
         self.blacklist_on_incorrect_feedback = bool(config.get("blacklist_on_incorrect_feedback", False))
-        self.use_vocab_loader = config.get("use_vocab_loader", True)
-        self.vocab_freq_weight = float(config.get("vocab_freq_weight", 0.6))
-        self.dictionary_dir = config.get("dictionary_dir", "data/japanese/dictionary")
 
         self._mecab_tagger = None
         self._mecab_yomi_tagger = None
@@ -351,8 +308,6 @@ class PipelineCorrector:
         self._embedding_cache = {}
         self._embedding_available = True
         self._domain_profiles = self._compile_domain_profiles(config.get("domain_context_profiles", []))
-        self.vocab_loader = None
-        self._init_vocab_loader()
         self._init_morph_analyzer()
         self._init_collocation_model()
         self.homophones = self._load_homophone_dictionary(self.homophones_file)
@@ -360,11 +315,6 @@ class PipelineCorrector:
         self._load_runtime_blacklist()
         self._load_verified_runtime_state()
         self._promote_runtime_map_to_dictionary()
-        
-        self.logger = None
-        if self.enable_logging:
-            log_dir = llm_suggest_config.get("log_dir", "result/llm_suggestions")
-            self.logger = LLMSuggestionLogger(log_dir=log_dir)
         
         # Statistics
         self.total_checked = 0
@@ -378,7 +328,6 @@ class PipelineCorrector:
         self.no_dict_llm_rejected = 0
         self.no_dict_short_rejects = 0
         self.no_dict_pre_normalized_sentences = 0
-        self.no_dict_local_rescued = 0
         self.no_dict_pair_verified_accept = 0
         self.no_dict_auto_learned = 0
         self.pos_filtered_candidates = 0
@@ -393,7 +342,6 @@ class PipelineCorrector:
         self.llm_recheck_alt_accept = 0
         self.embedding_recheck_hints = 0
         self._last_used_llm = False
-        self._last_no_dict_mode = ""
         self._llm_unavailable = False
         self._last_llm_pairs = []
         self._last_no_dict_pairs = []
@@ -410,15 +358,6 @@ class PipelineCorrector:
         if re.search(r"[<>|\[\]{}]", text):
             return ""
         return text
-
-    def _init_vocab_loader(self):
-        """Initialize optional vocabulary/proper-noun loader used by scoring and guards."""
-        if not self.use_vocab_loader or JapaneseDictionaryLoader is None:
-            return
-        try:
-            self.vocab_loader = JapaneseDictionaryLoader(self.dictionary_dir)
-        except Exception:
-            self.vocab_loader = None
 
     def _frequency_to_weight(self, frequency):
         """Normalize loader frequency labels into numeric score bonus."""
@@ -454,24 +393,12 @@ class PipelineCorrector:
         return 1
 
     def _is_protected_word(self, word):
-        """Return True for words that should not be rewritten (e.g., protected proper nouns)."""
-        token = (word or "").strip()
-        if not token or not self.vocab_loader:
-            return False
-        try:
-            return bool(self.vocab_loader.should_protect_word(token))
-        except Exception:
-            return False
+        """No external vocabulary loader: keep simple default behavior."""
+        return False
 
     def _get_vocab_frequency(self, word):
-        """Read word frequency from loader when available."""
-        token = (word or "").strip()
-        if not token or not self.vocab_loader:
-            return None
-        try:
-            return self.vocab_loader.get_word_frequency(token)
-        except Exception:
-            return None
+        """No external vocabulary loader: frequency is unavailable."""
+        return None
 
     def _build_reading_index(self):
         """Build reading-to-candidate index to recover missed dictionary coverage."""
@@ -1201,28 +1128,8 @@ class PipelineCorrector:
         if normalized in self._embedding_cache:
             return self._embedding_cache.get(normalized)
 
-        def _local_embedding(src):
-            compact = re.sub(r"\s+", "", src or "")
-            if not compact:
-                return None
-            dim = 256
-            vec = [0.0] * dim
-            chars = list(compact)
-            if len(chars) < 3:
-                chars = chars + ["_"] * (3 - len(chars))
-            for i in range(len(chars) - 2):
-                a = ord(chars[i])
-                b = ord(chars[i + 1])
-                c = ord(chars[i + 2])
-                idx = (a * 31 + b * 17 + c * 13) % dim
-                vec[idx] += 1.0
-            return vec
-
         if not self._embedding_available:
-            vec = _local_embedding(normalized)
-            if vec:
-                self._embedding_cache[normalized] = vec
-            return vec
+            return None
 
         use_client = client or self.client
         try:
@@ -1236,10 +1143,7 @@ class PipelineCorrector:
             return vector
         except Exception:
             self._embedding_available = False
-            vec = _local_embedding(normalized)
-            if vec:
-                self._embedding_cache[normalized] = vec
-            return vec
+            return None
 
     def _embedding_delta_scores(self, sentence, word, candidates, client=None):
         """Return sim(context,candidate)-sim(context,source) for candidate ranking hints."""
@@ -1590,12 +1494,6 @@ class PipelineCorrector:
 
         return candidates[0] if candidates else None, 0
 
-    def _is_trusted_boundary_override_pair(self, wrong_word, correct_word):
-        """Allow dictionary boundary override only for explicitly trusted sources."""
-        meta = (self.homophones.get(wrong_word, {}) or {}).get("metadata", {}).get(correct_word, {}) or {}
-        source = str(meta.get("source", "") or "")
-        return source in self.dict_boundary_override_sources
-
     def _resolve_learning_reading(self, wrong_word, correct_word, context_hint=""):
         """Resolve stable reading key for learned pairs from dictionary/context/MeCab fallbacks."""
         wrong = (wrong_word or "").strip()
@@ -1858,20 +1756,6 @@ class PipelineCorrector:
             return False
         return bool(re.fullmatch(r"[\u3040-\u309f\u30a0-\u30ffー]+", value))
 
-    def _is_kanji_to_kana_downgrade(self, old_text, new_text):
-        """Reject rewrites that only convert known kanji words into plain kana spellings."""
-        old_token = (old_text or "").strip()
-        new_token = (new_text or "").strip()
-        if not old_token or not new_token:
-            return False
-        old_has_kanji = bool(re.search(r"[\u4e00-\u9fff々ヶ]", old_token))
-        new_is_kana = bool(re.fullmatch(r"[\u3040-\u309f\u30a0-\u30ffー]+", new_token))
-        if not old_has_kanji or not new_is_kana:
-            return False
-        old_reading = self._normalize_reading_key(self._reading_for_text(old_token) or old_token)
-        new_norm = self._normalize_reading_key(new_token)
-        return bool(old_reading and new_norm and old_reading == new_norm)
-
     def postprocess_spoken_style(self, sentence):
         """Normalize over-kanjified spoken forms to kana-first style for final output."""
         text = sentence or ""
@@ -1914,33 +1798,6 @@ class PipelineCorrector:
             target_ok = (not target_variants) or bool(target_variants.intersection(self.pos_allow))
             return source_ok and target_ok
         return True
-
-    def _extract_context_window(self, sentence, center_word, window_size=2):
-        """Extract N-token context around the learned target word."""
-        if not sentence or not center_word or window_size <= 0:
-            return {"left": [], "right": []}
-
-        tokens = self._analyze_morphemes(sentence)
-        if not tokens:
-            return {"left": [], "right": []}
-
-        center_idx = None
-        center_start = sentence.find(center_word)
-        center_end = center_start + len(center_word) if center_start >= 0 else -1
-        if center_start >= 0:
-            for idx, token in enumerate(tokens):
-                if token["start"] < center_end and token["end"] > center_start:
-                    center_idx = idx
-                    break
-        if center_idx is None:
-            return {"left": [], "right": []}
-
-        left_slice = tokens[max(0, center_idx - window_size):center_idx]
-        right_slice = tokens[center_idx + 1:center_idx + 1 + window_size]
-        return {
-            "left": [t.get("surface", "") for t in left_slice if t.get("surface")],
-            "right": [t.get("surface", "") for t in right_slice if t.get("surface")],
-        }
 
     def _init_morph_analyzer(self):
         """Initialize MeCab for POS-based filtering if available."""
@@ -2331,37 +2188,6 @@ class PipelineCorrector:
         cleaned = re.sub(r"<think>[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
         return cleaned.strip()
 
-    def _extract_tagged_sentence(self, raw_output, original_sentence):
-        """Parse strict <改>/<原> output; fallback to original when format is invalid."""
-        text = self._strip_reasoning_blocks(raw_output or "")
-        if not text:
-            return original_sentence
-
-        # Prefer bracket format used by chinese-style prompt: <改>[...] / <原>[...]
-        modified_bracket_match = re.search(r"<改>\s*\[(.*?)\]\s*$", text, flags=re.DOTALL)
-        if modified_bracket_match:
-            return modified_bracket_match.group(1).strip()
-
-        original_bracket_match = re.search(r"<原>\s*\[(.*?)\]\s*$", text, flags=re.DOTALL)
-        if original_bracket_match:
-            return original_sentence
-
-        modified_match = re.search(r"<改>\s*(.+)", text)
-        if modified_match:
-            return modified_match.group(1).strip()
-
-        original_match = re.search(r"<原>\s*(.+)", text)
-        if original_match:
-            return original_sentence
-
-        return original_sentence
-
-    def _build_no_dict_free_prompt(self, sentence):
-        """Build no-dict free-correction prompt from config template when provided."""
-        if not self.no_dict_prompt:
-            return ""
-        return f"{self.no_dict_prompt}\n\n{self.no_dict_split_word} {sentence}\n出力:"
-
     def _normalize_pre_no_dict_sentence(self, sentence):
         """Apply generic orthographic normalization before no-dict detection/proposal."""
         text = sentence or ""
@@ -2381,42 +2207,6 @@ class PipelineCorrector:
         if updated != text:
             self.no_dict_pre_normalized_sentences += 1
         return updated, applied
-
-    def _build_dynamic_no_dict_few_shot(self, sentence, target_hint=""):
-        """Build dynamic few-shot block for no-dict prompt based on error traits/context."""
-        if not self.no_dict_dynamic_few_shot:
-            return ""
-
-        examples = []
-        if target_hint and len(target_hint) <= 2:
-            examples.append(
-                "入力文: はい。えっとあの、今日中に勝って来ますか？\n"
-                "出力: ACTION: REPLACE | WRONG: 勝って | RIGHT: かかって"
-            )
-
-        if re.search(r"[致頂下有無居事所掛分宜難]", sentence):
-            examples.append(
-                "入力文: お待たせ致しました。\n"
-                "出力: ACTION: REPLACE | WRONG: 致しました | RIGHT: いたしました"
-            )
-
-        real_estate_tokens = {"物件", "不動産", "売り物件", "内見", "担当", "梅田", "スリーラスター"}
-        if any(tok in sentence for tok in real_estate_tokens):
-            examples.append(
-                "入力文: じゃあ内検が出来るかどうか\n"
-                "出力: ACTION: REPLACE | WRONG: 内検 | RIGHT: 内見"
-            )
-
-        if not self.disable_keep_choice:
-            examples.append(
-                "入力文: はい、大丈夫です。\n"
-                "出力: ACTION: KEEP"
-            )
-
-        formatted = ["【動的Few-shot例】"]
-        for i, ex in enumerate(examples[:3], 1):
-            formatted.append(f"例{i}:\n{ex}")
-        return "\n".join(formatted)
 
     def _detect_no_dict_error(self, sentence):
         """Step-1 gate: detect whether sentence likely contains a clear homophone ASR error."""
@@ -2482,19 +2272,6 @@ class PipelineCorrector:
 
         return ""
 
-    def _is_safe_free_correction(self, candidate, original_sentence):
-        """Safety gate for free-form corrected sentence extracted from tagged output."""
-        if not candidate or candidate == original_sentence:
-            return candidate == original_sentence
-        lowered = candidate.lower()
-        if "<think>" in lowered or "</think>" in lowered:
-            return False
-        if "<" in candidate or ">" in candidate:
-            return False
-        if len(candidate) > max(20, len(original_sentence) * 2):
-            return False
-        return True
-
     def _extract_single_span_change(self, original_sentence, corrected_sentence):
         """Extract one contiguous replacement span between original and corrected strings."""
         if original_sentence == corrected_sentence:
@@ -2515,88 +2292,6 @@ class PipelineCorrector:
         old_fragment = original_sentence[prefix:len(original_sentence) - suffix if suffix > 0 else len(original_sentence)]
         new_fragment = corrected_sentence[prefix:len(corrected_sentence) - suffix if suffix > 0 else len(corrected_sentence)]
         return old_fragment, new_fragment
-
-    def _is_kanji_char(self, ch):
-        """Return True for a single Kanji-like character."""
-        return bool(re.fullmatch(r"[\u4e00-\u9fff々ヶ]", ch or ""))
-
-    def _extract_expanded_word_change(self, original_sentence, corrected_sentence):
-        """Expand a minimal diff span to Kanji word boundaries when context allows."""
-        if original_sentence == corrected_sentence:
-            return None, None
-
-        prefix = 0
-        max_prefix = min(len(original_sentence), len(corrected_sentence))
-        while prefix < max_prefix and original_sentence[prefix] == corrected_sentence[prefix]:
-            prefix += 1
-
-        suffix = 0
-        orig_remain = len(original_sentence) - prefix
-        corr_remain = len(corrected_sentence) - prefix
-        max_suffix = min(orig_remain, corr_remain)
-        while suffix < max_suffix and original_sentence[len(original_sentence) - 1 - suffix] == corrected_sentence[len(corrected_sentence) - 1 - suffix]:
-            suffix += 1
-
-        orig_start = prefix
-        corr_start = prefix
-        orig_end = len(original_sentence) - suffix if suffix > 0 else len(original_sentence)
-        corr_end = len(corrected_sentence) - suffix if suffix > 0 else len(corrected_sentence)
-
-        while orig_start > 0 and corr_start > 0:
-            prev_orig = original_sentence[orig_start - 1]
-            prev_corr = corrected_sentence[corr_start - 1]
-            if prev_orig != prev_corr or not self._is_kanji_char(prev_orig):
-                break
-            orig_start -= 1
-            corr_start -= 1
-
-        while orig_end < len(original_sentence) and corr_end < len(corrected_sentence):
-            next_orig = original_sentence[orig_end]
-            next_corr = corrected_sentence[corr_end]
-            if next_orig != next_corr or not self._is_kanji_char(next_orig):
-                break
-            orig_end += 1
-            corr_end += 1
-
-        old_word = original_sentence[orig_start:orig_end].strip()
-        new_word = corrected_sentence[corr_start:corr_end].strip()
-
-        if not old_word or not new_word or old_word == new_word:
-            return self._extract_single_span_change(original_sentence, corrected_sentence)
-        if len(old_word) > 8 or len(new_word) > 8:
-            return self._extract_single_span_change(original_sentence, corrected_sentence)
-        return old_word, new_word
-
-    def _score_no_dict_change(self, original_sentence, corrected_sentence):
-        """Score no-dictionary LLM correction quality before applying it."""
-        old_fragment, new_fragment = self._extract_single_span_change(original_sentence, corrected_sentence)
-        if not old_fragment or not new_fragment:
-            return 0, old_fragment, new_fragment
-
-        score = 0
-        max_len = max(1, len(original_sentence))
-        span_ratio = max(len(old_fragment), len(new_fragment)) / max_len
-        old_len = len(old_fragment)
-        new_len = len(new_fragment)
-
-        if old_fragment != new_fragment:
-            score += 1
-        # Prefer phrase-level edits but allow strict one-kanji substitutions.
-        if 2 <= old_len <= 8 and 2 <= new_len <= 8:
-            score += 1
-        elif old_len == 1 and new_len == 1 and re.search(r"[\u4e00-\u9fff]", old_fragment) and re.search(r"[\u4e00-\u9fff]", new_fragment):
-            score += 1
-        if span_ratio <= 0.25:
-            score += 1
-        if re.fullmatch(r"[\u3040-\u30ff\u4e00-\u9fffーA-Za-z0-9々ヶ]+", new_fragment):
-            score += 1
-        if abs(len(corrected_sentence) - len(original_sentence)) <= 6:
-            score += 1
-        # Prefer noun-like or phrase-like replacements, avoid kana-only tiny rewrites.
-        if re.search(r"[\u4e00-\u9fff]", old_fragment) and re.search(r"[\u4e00-\u9fff]", new_fragment):
-            score += 1
-
-        return score, old_fragment, new_fragment
 
     def _passes_no_dict_span_guard(self, old_fragment, new_fragment):
         """Hard constraints for no-dict acceptance to avoid sentence-level rewrites."""
@@ -2713,27 +2408,6 @@ class PipelineCorrector:
 
         return True
 
-    def _passes_sentence_level_guard(self, original_sentence, corrected_sentence):
-        """Safety guard for sentence-level no-dict rewrites when enabled."""
-        if not corrected_sentence or corrected_sentence == original_sentence:
-            return False
-        if abs(len(corrected_sentence) - len(original_sentence)) > self.no_dict_sentence_max_len_delta:
-            return False
-
-        similarity = SequenceMatcher(None, original_sentence, corrected_sentence).ratio()
-        if similarity < self.no_dict_sentence_min_similarity:
-            return False
-
-        edit_chars = 0
-        matcher = SequenceMatcher(None, original_sentence, corrected_sentence)
-        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-            if tag == "equal":
-                continue
-            edit_chars += max(i2 - i1, j2 - j1)
-            if edit_chars > self.no_dict_sentence_max_edit_chars:
-                return False
-        return True
-
     def _propose_no_dict_replacement(self, sentence, target_hint="", force=False):
         """Step-2 gate: propose a single homophone lexical replacement instead of rewriting whole sentence."""
         hint_line = f"候補誤り語: {target_hint}\n" if target_hint else ""
@@ -2745,56 +2419,18 @@ class PipelineCorrector:
                 filtered = [c for c in raw_candidates if c and c != target_hint][:8]
                 if filtered:
                     candidate_line = "RIGHT候補(必ずこの中から1つ選ぶ): " + " / ".join(filtered) + "\n"
-        few_shot_block = self._build_dynamic_no_dict_few_shot(sentence, target_hint=target_hint)
-        if force:
-            prompt = f"""【日本語ASR同音誤り修正】
-入力文: {sentence}
-{hint_line}
-{candidate_line}
-【判定ルール】1. 1語のみを置換する 2. 同音・近音誤りのみ 3. 文脈上、より自然な候補のみ 4. {'KEEPは最終手段' if not self.disable_keep_choice else 'KEEP禁止。必ずREPLACE'}
-5. 候補誤り語がある場合、WRONGは必ずその語を使う
-6. RIGHT候補がある場合、RIGHTは候補一覧からのみ選ぶ
-
-【出力】以下のいずれか1行だけを出力。思考タグは使用しないでください。
-ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
-{'ACTION: KEEP' if not self.disable_keep_choice else ''}
-
-例:
-入力: お手元には解いていないという状態でしょうか。
-出力: ACTION: REPLACE | WRONG: 解いて | RIGHT: 届いて
-"""
-        else:
-            prompt = f"""【日本語ASR同音誤り修正提案】
-
-あなたはASR誤り修正専用の判定器です。文の続きは絶対に書かないでください。
-
-入力文: {sentence}
-{hint_line}
-【ルール】
-1. 同音・近音の誤り語が明確な場合のみ置換提案
-2. 置換は1箇所のみ
-3. 置換位置の前後3〜5語の連語が自然になる場合のみ提案
-4. 言い換え・意味変更・敬語変換・句読点変更は禁止
-5. {'KEEP は最終手段（候補が見つからない場合のみ）' if not self.disable_keep_choice else 'KEEP禁止。必ずREPLACEを返す'}
-6. 1つでも自然な置換候補があるなら REPLACE を返す
-7. 文の続きの生成・補完は禁止（入力を要約/言い換えしない）
-8. 説明は禁止
-
-【出力形式】
-ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
-{'または ACTION: KEEP' if not self.disable_keep_choice else ''}
-
-{few_shot_block}
-
-【例】
-入力文: あ、かしこまりました。じゃあ内検が出来るかどうか
-出力: ACTION: REPLACE | WRONG: 内検 | RIGHT: 内見
-
-入力文: はい、大丈夫です。
-出力: {'ACTION: KEEP' if not self.disable_keep_choice else 'ACTION: REPLACE | WRONG: 内検 | RIGHT: 内見'}
-
-出力は必ず1行のみ。余計な文字を出力しない。
-"""
+        base_prompt = self.no_dict_prompt_template or (
+            "あなたはASR（音声認識）の同音異義語・近音語の誤り修正を行う専門AIです。\n"
+            "出力は必ず <改>[...] の1行のみです。"
+        )
+        prompt = (
+            f"{base_prompt}\n\n"
+            f"【補助情報】\n"
+            f"{hint_line}"
+            f"{candidate_line}"
+            f"入力: {sentence}\n"
+            f"出力:"
+        )
         try:
             response = self._call_llm_with_retry(
                 prompt,
@@ -2802,53 +2438,24 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                 client=self.no_dict_client,
                 model=self.no_dict_model,
                 system_message=(
-                    "You are a Japanese ASR error correction classifier. "
-                    "Output your decision in a single line. "
+                    "You are a Japanese ASR error correction assistant. "
+                    "Output in one line only as <改>[corrected sentence]. "
                     "DO NOT use <think> tags, <reasoning>, or any internal monologue. "
-                    + (
-                        "Output ONLY: ACTION: REPLACE | WRONG: X | RIGHT: Y. KEEP is forbidden."
-                        if self.disable_keep_choice
-                        else "Output ONLY the ACTION line in the format: ACTION: REPLACE | WRONG: X | RIGHT: Y or ACTION: KEEP."
-                    )
-                    + " No explanations, no reasoning blocks."
+                    "No explanations, no extra text."
                 ),
             )
-            raw_content = response.choices[0].message.content
-            action_match = re.search(r"ACTION\s*:\s*(REPLACE|KEEP)", raw_content or "", re.IGNORECASE)
-            
-            if action_match:
-                action_type = action_match.group(1).upper()
-                wrong_match = re.search(r"WRONG\s*:\s*([^\||\n<>]+)", raw_content, re.IGNORECASE)
-                right_match = re.search(r"RIGHT\s*:\s*([^\||\n<>]+)", raw_content, re.IGNORECASE)
-
-                if not wrong_match:
-                    wrong_match = re.search(r"WRONG\s*:\s*([^|]+?)(?:\||$)", raw_content, re.IGNORECASE)
-                if not right_match:
-                    right_match = re.search(r"RIGHT\s*:\s*(.+?)$", raw_content, re.MULTILINE | re.IGNORECASE)
-                
-                wrong_in_think = wrong_match.group(1).strip() if wrong_match else None
-                right_in_think = right_match.group(1).strip() if right_match else None
-                
-                if action_type == "REPLACE" and wrong_in_think and right_in_think:
-                    wrong = wrong_in_think.strip().replace("<", "").replace(">", "")
-                    right = right_in_think.strip().replace("<", "").replace(">", "")
-                    if wrong and right and wrong != right and len(wrong) <= 10 and len(right) <= 10:
-                        return wrong, right
-            
-            # Fallback: Try normal parsing after stripping reasoning blocks
-            raw = self._strip_reasoning_blocks(raw_content)
-            upper = raw.upper() if raw else ""
-            if "ACTION:" not in upper or "REPLACE" not in upper:
+            raw = self._strip_reasoning_blocks(response.choices[0].message.content)
+            match = re.search(r"<改>\[(.*?)\]", raw or "", flags=re.DOTALL)
+            if not match:
                 return None, None
 
-            wrong_match = re.search(r"WRONG\s*:\s*([^|\n]+)", raw, flags=re.IGNORECASE)
-            right_match = re.search(r"RIGHT\s*:\s*([^|\n]+)", raw, flags=re.IGNORECASE)
-            if not wrong_match or not right_match:
+            corrected_sentence = match.group(1).strip()
+            if not corrected_sentence or corrected_sentence == sentence:
                 return None, None
-                
-            # Extract and validate WRONG/RIGHT pair
-            wrong = wrong_match.group(1).strip().replace("<", "").replace(">", "")
-            right = right_match.group(1).strip().replace("<", "").replace(">", "")
+
+            wrong, right = self._extract_single_span_change(sentence, corrected_sentence)
+            if not wrong or not right:
+                return None, None
             print(f"  [PARSED] WRONG={wrong!r} RIGHT={right!r}")
             if not wrong or not right or wrong == right:
                 print(f"  [REJECT] Empty or same pair")
@@ -2927,7 +2534,7 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
 
 
 
-    def _maybe_auto_learn_from_no_dict(self, sentence, old_fragment, new_fragment):
+    def _maybe_auto_learn_from_no_dict(self, old_fragment, new_fragment):
         """Queue no-dict corrections for later label-based verification."""
         if not self.no_dict_auto_learn_from_llm:
             return
@@ -2948,16 +2555,9 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
             return
 
         key = (old_fragment, new_fragment)
-        item = self._pending_no_dict_pairs.get(key, {
-            "hits": 0,
-            "last_sentence": "",
-            "max_similarity": 0.0,
-        })
-        item["hits"] = int(item.get("hits", 0)) + 1
-        item["last_sentence"] = sentence
-        item["max_similarity"] = max(float(item.get("max_similarity", 0.0) or 0.0), float(similarity))
-        self._pending_no_dict_pairs[key] = item
-        print(f"  [NO-DICT-PENDING] {old_fragment} -> {new_fragment} (hits={item['hits']})")
+        hits = int(self._pending_no_dict_pairs.get(key, 0) or 0) + 1
+        self._pending_no_dict_pairs[key] = hits
+        print(f"  [NO-DICT-PENDING] {old_fragment} -> {new_fragment} (hits={hits})")
 
     def _pick_aggressive_no_dict_candidate(self, sentence, target_hint):
         """Pick a fallback replacement from reading-group candidates when KEEP is disabled."""
@@ -3012,8 +2612,6 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
 
     def llm_correct_without_dictionary(self, sentence, target_hint=""):
         """No-dict stage: ask LLM for one homophone replacement and return sentence-level result."""
-        self._last_no_dict_mode = ""
-
         if self._llm_unavailable:
             return sentence
 
@@ -3099,11 +2697,10 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
             self.no_dict_llm_rejected += 1
             return sentence
 
-        self._last_no_dict_mode = "llm"
         return sentence.replace(source, right, 1)
 
-    def learn_from_feedback(self, original_sentence, corrected_sentence, expected_sentence, applied_changes=None):
-        """Strict learning: only verified no-dict pairs are persisted; wrong pairs are blacklisted."""
+    def learn_from_feedback(self, original_sentence, corrected_sentence, expected_sentence):
+        """Learn only from no-dict pairs verified by label feedback."""
         if not self.auto_learn_dictionary:
             return False
         if not expected_sentence:
@@ -3128,6 +2725,7 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
             if key in seen:
                 continue
             seen.add(key)
+            hits = max(1, int(self._pending_no_dict_pairs.pop(key, 1) or 1))
 
             is_verified = (
                 corrected_sentence == expected_sentence
@@ -3149,21 +2747,15 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                     print(f"  [NO-DICT-BLACKLIST] {wrong_word} -> {correct_word}")
                 else:
                     print(f"  [NO-DICT-SKIP] {wrong_word} -> {correct_word} (incorrect feedback, not blacklisted)")
-                self._pending_no_dict_pairs.pop(key, None)
                 continue
 
             if len(wrong_word) < self.auto_learn_min_len or len(correct_word) < self.auto_learn_min_len:
-                self._pending_no_dict_pairs.pop(key, None)
                 continue
             if not self._is_reading_compatible(wrong_word, correct_word):
-                self._pending_no_dict_pairs.pop(key, None)
                 continue
             if self._is_blacklisted_mapping(wrong_word, correct_word):
-                self._pending_no_dict_pairs.pop(key, None)
                 continue
 
-            pending = self._pending_no_dict_pairs.get(key, {})
-            hits = max(1, int(pending.get("hits", 1) or 1))
             self._remember_verified_mapping(wrong_word, correct_word)
             self.no_dict_pair_verified_accept += 1
 
@@ -3174,7 +2766,6 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                 source="no_dict_verified",
                 freq=hits,
             )
-            self._pending_no_dict_pairs.pop(key, None)
             if added:
                 learned_any = True
                 self.no_dict_auto_learned += 1
@@ -3331,8 +2922,8 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
             top = [f"{cand}:{score:+.3f}" for cand, score in ranked[:3]]
             embedding_hint = f"Embedding候補優先度: {', '.join(top)}"
         
-        # Build few-shot examples only when compact prompt mode is disabled.
-        few_shot = "" if self.fast_llm_prompt else LLMSuggestionFormatter.few_shot_homophones()
+        # Removed external few-shot logger/formatter dependency.
+        few_shot = ""
         
         output_format = f"""【出力形式】
     CHOICE: <候補>
@@ -3417,37 +3008,11 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                         final_choice = candidate
                         break
             
-            # Log the CHOICE
-            if self.logger:
-                self.logger.log_suggestion(
-                    pipeline_type="homophones",
-                    sentence=sentence,
-                    error_location=f"word: {word}",
-                    error_text=word,
-                    suggestion_type="LLM_CHOICE",
-                    suggestion=final_choice,
-                    confidence=7.5 if final_choice in correction_options else 5.0,
-                    tokens_used=tokens_used,
-                    verification_status="unverified",
-                )
-            
             return final_choice
             
         except Exception as e:
             self._mark_llm_unavailable_if_rate_limited(e)
             print(f"LLM error: {e}")
-            if self.logger:
-                self.logger.log_suggestion(
-                    pipeline_type="homophones",
-                    sentence=sentence,
-                    error_location=f"word: {word}",
-                    error_text=word,
-                    suggestion_type="LLM_CHOICE",
-                    suggestion=word,
-                    confidence=0.0,
-                    verification_status="unverified",
-                    fallback_reason=f"LLM error: {str(e)}",
-                )
             if self.disable_keep_choice and correction_options:
                 return correction_options[0]
             return word
@@ -3672,7 +3237,7 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                     self._last_used_llm = True
                     self._last_llm_pairs.append((old_fragment, new_fragment))
                     self._last_no_dict_pairs.append((old_fragment, new_fragment))
-                    self._maybe_auto_learn_from_no_dict(no_dict_input, old_fragment, new_fragment)
+                    self._maybe_auto_learn_from_no_dict(old_fragment, new_fragment)
                     print(f"  [NO-DICT] {old_fragment} → {new_fragment}")
                     return _finalize_output(llm_corrected_sentence, changes + [f"{old_fragment}→{new_fragment}"])
 
@@ -3707,7 +3272,6 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
         print(f"No-dict rejected:     {self.no_dict_llm_rejected}")
         print(f"No-dict pair verify:  {self.no_dict_pair_verified_accept}")
         print(f"No-dict auto-learned: {self.no_dict_auto_learned}")
-        print(f"No-dict local rescue: {self.no_dict_local_rescued}")
         print(f"No-dict short rejects:{self.no_dict_short_rejects}")
         print(f"POS candidates pruned:{self.pos_filtered_candidates}")
         print(f"POS prune events:     {self.pos_prune_events}")
@@ -3724,7 +3288,3 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
         print(f"Total corrections:    {sentence_corrections}")
         print("=" * 60)
         
-        # Save and print logger stats
-        if self.logger:
-            self.logger.save_stats()
-            self.logger.print_summary()

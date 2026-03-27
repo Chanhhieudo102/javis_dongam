@@ -3028,7 +3028,7 @@
           ],
           "exclude": []
         },
-        "weight": 1.2
+        "weight": 1.5
       },
       {
         "word": "内検",
@@ -3870,7 +3870,7 @@
           ],
           "exclude": []
         },
-        "weight": 1.2
+        "weight": 1.5
       },
       {
         "word": "只今",
@@ -3943,7 +3943,7 @@
           ],
           "exclude": []
         },
-        "weight": 1.2
+        "weight": 1.5
       },
       {
         "word": "勝って",
@@ -3979,7 +3979,7 @@
           ],
           "exclude": []
         },
-        "weight": 1.2
+        "weight": 1.5
       },
       {
         "word": "街って",
@@ -4089,7 +4089,7 @@
           ],
           "exclude": []
         },
-        "weight": 1.2
+        "weight": 1.5
       },
       {
         "word": "散らし",

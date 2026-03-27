@@ -3,9 +3,8 @@ path:
   test_data: D:\VJ\LLM-ASR-Error-Correction\data\japanese\test\test.txt
   label: D:\VJ\LLM-ASR-Error-Correction\data\japanese\label\label.txt
 
-# LLM Configuration (using only qwen/qwen3-32b model as per user preference)
 model: qwen/qwen3-32b
-api_key: YOUR_GROQ_API_KEY
+api_key: ${GROQ_API_KEY}
 base_url: https://api.groq.com/openai/v1
 use_groq_sdk: true
 temperature: 0.0
@@ -32,6 +31,7 @@ enable_llm_select: true
 llm_recheck_min_score: 2
 dict_recheck_margin: 1
 enable_embedding_score_in_dict: false
+enable_embedding_recheck: false
 embedding_score_weight: 2.5
 llm_skip_tokens: [はい, あ, あの, えっと, うーん, えー]
 skip_filler_in_dict_stage: true
