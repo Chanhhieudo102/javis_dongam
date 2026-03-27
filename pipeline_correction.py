@@ -36,10 +36,10 @@ class PipelineCorrector:
         self.model = config["model"]
         self.api_key = config["api_key"]
         self.base_url = config["base_url"]
-        # Force a single model across all branches to keep behavior consistent.
-        self.no_dict_model = self.model
+        self.no_dict_model = config.get("no_dict_model", self.model)
         self.no_dict_api_key = config.get("no_dict_api_key", self.api_key)
         self.no_dict_base_url = config.get("no_dict_base_url", self.base_url)
+        self.llm_client_max_retries = int(config.get("llm_client_max_retries", 0))
         self.temperature = config.get("temperature", 0.0)
         self.top_p = config.get("top_p", 0.3)
         self.dict_confidence_threshold = config.get("dict_confidence_threshold", 4)
@@ -57,11 +57,19 @@ class PipelineCorrector:
             else:
                 self.no_dict_client = Groq(api_key=self.no_dict_api_key)
         else:
-            self.client = OpenAI(api_key=self.api_key, base_url=self.base_url, max_retries=0)
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                max_retries=self.llm_client_max_retries,
+            )
             if self.no_dict_api_key == self.api_key and self.no_dict_base_url == self.base_url:
                 self.no_dict_client = self.client
             else:
-                self.no_dict_client = OpenAI(api_key=self.no_dict_api_key, base_url=self.no_dict_base_url, max_retries=0)
+                self.no_dict_client = OpenAI(
+                    api_key=self.no_dict_api_key,
+                    base_url=self.no_dict_base_url,
+                    max_retries=self.llm_client_max_retries,
+                )
         
         self.auto_learn_dictionary = config.get("auto_learn_dictionary", True)
         self.no_dict_min_score = config.get("no_dict_min_score", 3)
@@ -72,7 +80,7 @@ class PipelineCorrector:
         # Keep backward compatibility but default to full Japanese homophones
         # (kana/katakana/kanji), not kanji-only substitutions.
         self.no_dict_require_kanji = config.get("no_dict_require_kanji", False)
-        self.no_dict_avoid_short_words = config.get("no_dict_avoid_short_words", True)
+        self.no_dict_avoid_short_words = bool(config.get("no_dict_avoid_short_words", False))
         self.no_dict_token_boundary_check = config.get("no_dict_token_boundary_check", True)
         self.auto_learn_min_len = config.get("auto_learn_min_len", 2)
         # Always learn directly into the main homophone dictionary.
@@ -81,27 +89,26 @@ class PipelineCorrector:
         self.enable_pos_filter = True
         self.use_verified_runtime_map = config.get("use_verified_runtime_map", True)
         self.verified_runtime_min_hits = config.get("verified_runtime_min_hits", 1)
-        self.no_dict_require_reading_match = config.get("no_dict_require_reading_match", True)
-        self.no_dict_min_reading_similarity = float(config.get("no_dict_min_reading_similarity", 0.97))
-        self.no_dict_adaptive_similarity_floor = float(config.get("no_dict_adaptive_similarity_floor", 0.85))
-        self.no_dict_require_explicit_homophone = config.get("no_dict_require_explicit_homophone", True)
+        self.no_dict_require_reading_match = bool(config.get("no_dict_require_reading_match", False))
+        self.no_dict_min_reading_similarity = float(config.get("no_dict_min_reading_similarity", 0.0))
+        self.no_dict_adaptive_similarity_floor = float(config.get("no_dict_adaptive_similarity_floor", 0.0))
+        self.no_dict_require_explicit_homophone = bool(config.get("no_dict_require_explicit_homophone", False))
         self.no_dict_allow_oov_homophone = config.get("no_dict_allow_oov_homophone", True)
         self.no_dict_force_when_detector_ok = config.get("no_dict_force_when_detector_ok", False)
         self.no_dict_route_unresolved = config.get("no_dict_route_unresolved", True)
         self.enable_stage3_fallback = config.get("enable_stage3_fallback", True)
-        self.disable_keep_choice = bool(config.get("disable_keep_choice", False))
-        self.force_change_on_llm_uncertain = bool(config.get("force_change_on_llm_uncertain", False))
+        self.disable_keep_choice = bool(config.get("disable_keep_choice", True))
+        self.force_change_on_llm_uncertain = bool(config.get("force_change_on_llm_uncertain", True))
         # When enabled, unresolved (no-dict) cases are fully delegated to LLM:
         # LLM decides whether to change or keep, without extra no-dict gate rejection.
         self.no_dict_delegate_to_llm = config.get("no_dict_delegate_to_llm", False)
         self.no_dict_trust_llm_decision = config.get("no_dict_trust_llm_decision", False)
         self.no_dict_allow_sentence_level = config.get("no_dict_allow_sentence_level", True)
-        self.no_dict_enable_span_guard = config.get("no_dict_enable_span_guard", False)
-        self.no_dict_enable_pos_guard = config.get("no_dict_enable_pos_guard", False)
+        self.no_dict_enable_span_guard = bool(config.get("no_dict_enable_span_guard", False))
+        self.no_dict_enable_pos_guard = bool(config.get("no_dict_enable_pos_guard", False))
         self.disable_llm_on_rate_limit = config.get("disable_llm_on_rate_limit", True)
         self.no_dict_disable_hard_fixes = bool(config.get("no_dict_disable_hard_fixes", False))
         self.enable_no_dict_detector = config.get("enable_no_dict_detector", True)
-        self.prioritize_pos_anomaly = config.get("prioritize_pos_anomaly", True)
         self.no_dict_auto_learn_from_llm = config.get("no_dict_auto_learn_from_llm", True)
         self.no_dict_auto_learn_min_hits = int(config.get("no_dict_auto_learn_min_hits", 2))
         self.no_dict_auto_learn_min_similarity = float(config.get("no_dict_auto_learn_min_similarity", 0.86))
@@ -132,13 +139,7 @@ class PipelineCorrector:
         self.collocation_smoothing = float(config.get("collocation_smoothing", 0.5))
         self.collocation_min_count = int(config.get("collocation_min_count", 1))
         self.collocation_max_lines = int(config.get("collocation_max_lines", 200000))
-        self.collocation_corpus_paths = config.get(
-            "collocation_corpus_paths",
-            [
-                "data/japanese/label/test1.txt",
-                "data/japanese/test/test1.txt",
-            ],
-        )
+        self.collocation_corpus_paths = list(config.get("collocation_corpus_paths", []) or [])
         verification_cfg = config.get("verification", {}) or {}
         self.verification_engine = verification_cfg.get("engine", "mecab")
         self.check_reading = verification_cfg.get("check_reading", True)
@@ -159,8 +160,8 @@ class PipelineCorrector:
             if not pattern or pattern == repl:
                 continue
             self.no_dict_pre_normalization_rules.append((pattern, repl))
-        self.enable_post_normalization = bool(config.get("enable_post_normalization", True))
-        # Post-normalization map is now fully driven by config (no hardcoded defaults).
+        self.enable_post_normalization = bool(config.get("enable_post_normalization", False))
+        # Post-normalization rules are fully driven by config (no hardcoded defaults).
         post_norm_map = config.get("post_normalization_map", {}) or {}
         raw_post_map = {}
         if isinstance(post_norm_map, dict):
@@ -181,7 +182,19 @@ class PipelineCorrector:
             if src_s and dst_s and src_s != dst_s:
                 normalized_pairs.append((src_s, dst_s))
         self.post_normalization_pairs = sorted(normalized_pairs, key=lambda x: len(x[0]), reverse=True)
-        self.no_dict_max_completion_tokens = config.get("max_completion_tokens", 120)
+        self.no_dict_max_completion_tokens = int(
+            config.get("no_dict_max_completion_tokens", config.get("max_completion_tokens", 120))
+        )
+        self.no_dict_system_message = str(
+            config.get(
+                "no_dict_system_message",
+                "You are a Japanese ASR error correction assistant. "
+                "Output in one line only as <改>[corrected sentence]. "
+                "DO NOT use <think> tags, <reasoning>, or any internal monologue. "
+                "No explanations, no extra text.",
+            )
+            or ""
+        ).strip()
         self.llm_select_max_completion_tokens = config.get("llm_select_max_completion_tokens", 20)
         self.fast_llm_prompt = config.get("fast_llm_prompt", False)
         self.disable_dictionary_stage = bool(config.get("disable_dictionary_stage", False))
@@ -808,24 +821,7 @@ class PipelineCorrector:
             if leader != dict_choice and leader_margin >= self.embedding_min_margin:
                 preferred = f"\n補足: Embedding上位は {leader}（辞書候補との差分 {leader_margin:+.3f}）"
             embedding_hint = "\nEmbedding差分（高いほど文脈適合）:\n" + "\n".join(top_lines) + preferred + "\n"
-        if self.disable_keep_choice:
-            prompt = f"""【同音異義語修正・再判定】
-
-文: {sentence}
-対象語: {word}
-辞書候補: {dict_choice}
-選択肢: {candidate_text}
-{embedding_hint}
-
-【ルール】
-1. 必ず変更を選ぶ（KEEP禁止）
-2. 辞書候補が妥当なら ACTION: DICT
-3. 選択肢内で辞書候補より良い語が明確なら ACTION: ALT | WORD: <候補>
-4. WORDは必ず選択肢から選ぶ
-5. 説明は禁止
-"""
-        else:
-            prompt = f"""【同音異義語修正・再判定】
+        prompt = f"""【同音異義語修正・再判定】
 
 文: {sentence}
 対象語: {word}
@@ -845,7 +841,7 @@ class PipelineCorrector:
             upper = raw.upper()
             if "ACTION:" not in upper:
                 return "DICT", dict_choice
-            if "ACTION: KEEP" in upper and not self.disable_keep_choice:
+            if "ACTION: KEEP" in upper:
                 return "KEEP", word
             if "ACTION: DICT" in upper:
                 return "DICT", dict_choice
@@ -2164,21 +2160,23 @@ class PipelineCorrector:
 
     def _detect_no_dict_error(self, sentence):
         """Step-1 gate: detect whether sentence likely contains a clear homophone ASR error."""
-        prompt = f"""【日本語ASR同音誤り判定】
-
-入力文: {sentence}
-
-【判定ルール】
-    1. 同音・近音の語彙誤りが明確な場合のみ ERROR
-    2. 前後3〜5語の連語（collocation）を見て、文脈上の不自然さがあるときだけ ERROR
-    3. 意味の言い換え・敬語変換・文体変換・句読点補正は対象外（必ず OK）
-    4. 不確実なら必ず OK
-    5. 説明は禁止
-
-【出力形式】
-- DECISION: ERROR | TARGET: 誤り語
-- DECISION: OK
-"""
+        base_prompt = self.no_dict_prompt_template or (
+            "あなたはASR（音声認識）の同音異義語・近音語の誤り修正を行う専門AIです。"
+        )
+        prompt = (
+            f"{base_prompt}\n\n"
+            f"【追加タスク: 判定のみ】\n"
+            f"入力文: {sentence}\n\n"
+            f"【判定ルール】\n"
+            f"1. 同音・近音の語彙誤りが明確な場合のみ ERROR\n"
+            f"2. 前後3〜5語の連語（collocation）を見て、文脈上の不自然さがあるときだけ ERROR\n"
+            f"3. 意味の言い換え・敬語変換・文体変換・句読点補正は対象外（必ず OK）\n"
+            f"4. 不確実なら必ず OK\n"
+            f"5. 説明は禁止\n\n"
+            f"【出力形式】\n"
+            f"- DECISION: ERROR | TARGET: 誤り語\n"
+            f"- DECISION: OK\n"
+        )
         try:
             response = self._call_llm_with_retry(
                 prompt,
@@ -2198,33 +2196,6 @@ class PipelineCorrector:
             return True, target
         except Exception:
             return False, ""
-
-    def _detect_pos_anomaly_target(self, sentence):
-        """Find a suspicious token by simple POS-pattern anomalies for no-dict prioritization."""
-        if not self.prioritize_pos_anomaly:
-            return ""
-        tokens = self._analyze_morphemes(sentence)
-        if not tokens:
-            return ""
-
-        for i, token in enumerate(tokens):
-            surface = (token.get("surface") or "").strip()
-            pos = token.get("pos", "")
-            if not surface:
-                continue
-
-            # Kanji token tagged as function word is often an ASR confusion signal.
-            if re.search(r"[\u4e00-\u9fff々ヶ]", surface) and pos in {"助詞", "助動詞", "記号"}:
-                return surface
-
-            # Isolated single-kanji noun between function words is frequently suspicious.
-            if len(surface) == 1 and re.search(r"[\u4e00-\u9fff々ヶ]", surface) and pos == "名詞":
-                prev_pos = tokens[i - 1].get("pos", "") if i > 0 else ""
-                next_pos = tokens[i + 1].get("pos", "") if i + 1 < len(tokens) else ""
-                if prev_pos in {"助詞", "助動詞"} and next_pos in {"助詞", "助動詞"}:
-                    return surface
-
-        return ""
 
     def _extract_single_span_change(self, original_sentence, corrected_sentence):
         """Extract one contiguous replacement span between original and corrected strings."""
@@ -2388,15 +2359,10 @@ class PipelineCorrector:
         try:
             response = self._call_llm_with_retry(
                 prompt,
-                max_tokens=400,
+                max_tokens=self.no_dict_max_completion_tokens,
                 client=self.no_dict_client,
                 model=self.no_dict_model,
-                system_message=(
-                    "You are a Japanese ASR error correction assistant. "
-                    "Output in one line only as <改>[corrected sentence]. "
-                    "DO NOT use <think> tags, <reasoning>, or any internal monologue. "
-                    "No explanations, no extra text."
-                ),
+                system_message=self.no_dict_system_message,
             )
             raw = self._strip_reasoning_blocks(response.choices[0].message.content)
             match = re.search(r"<改>\[(.*?)\]", raw or "", flags=re.DOTALL)
@@ -2534,7 +2500,6 @@ class PipelineCorrector:
         old_reading = self._reading_for_text(target_hint)
 
         ranked = []
-        ranked_loose = []
         for candidate in candidates:
             score = self._collocation_score(target_hint, candidate, left_tokens, right_tokens) * self.collocation_weight
             if embedding_scores:
@@ -2549,19 +2514,11 @@ class PipelineCorrector:
                     new_surface=candidate,
                 )
                 score += sim_bonus * 2.0
-            ranked_loose.append((score, sim_bonus, candidate))
-            if self._passes_no_dict_homophone_gate(sentence, target_hint, candidate):
-                ranked.append((score, candidate))
+            ranked.append((score, candidate))
 
         if ranked:
             ranked.sort(key=lambda x: x[0], reverse=True)
             return ranked[0][1]
-
-        if self.force_change_on_llm_uncertain and ranked_loose:
-            ranked_loose.sort(key=lambda x: x[0], reverse=True)
-            best_score, best_sim, best_candidate = ranked_loose[0]
-            if best_sim >= 0.45:
-                return best_candidate
         return ""
 
     def llm_correct_without_dictionary(self, sentence, target_hint=""):
@@ -2574,13 +2531,6 @@ class PipelineCorrector:
         
         if self.enable_no_dict_detector:
             should_fix, target_hint = self._detect_no_dict_error(sentence)
-        
-        # Step 2: Try POS anomaly detection as fallback/alternative
-        if not should_fix and self.prioritize_pos_anomaly:
-            anomaly_target = self._detect_pos_anomaly_target(sentence)
-            if anomaly_target:
-                should_fix = True
-                target_hint = anomaly_target
 
         # Skip no-dict LLM if detector does not find a concrete signal.
         if not should_fix:
@@ -2621,31 +2571,12 @@ class PipelineCorrector:
             return sentence
 
         if not self._passes_no_dict_pos_guard(sentence, source, right):
-            if not (self.disable_keep_choice and self.force_change_on_llm_uncertain):
-                self.no_dict_llm_rejected += 1
-                return sentence
+            self.no_dict_llm_rejected += 1
+            return sentence
 
         if not self._passes_no_dict_homophone_gate(sentence, source, right):
-            if not (self.disable_keep_choice and self.force_change_on_llm_uncertain):
-                self.no_dict_llm_rejected += 1
-                return sentence
-            old_reading = self._reading_for_text(source)
-            new_reading = self._reading_for_text(right)
-            if not old_reading or not new_reading:
-                self.no_dict_llm_rejected += 1
-                return sentence
-            relaxed_sim = self._reading_similarity_robust(
-                old_reading,
-                new_reading,
-                old_surface=source,
-                new_surface=right,
-            )
-            if relaxed_sim < max(0.50, self.no_dict_min_reading_similarity - 0.10):
-                self.no_dict_llm_rejected += 1
-                return sentence
-            if abs(len(source) - len(right)) > max(self.no_dict_max_len_delta, 4):
-                self.no_dict_llm_rejected += 1
-                return sentence
+            self.no_dict_llm_rejected += 1
+            return sentence
 
         if self._is_blacklisted_mapping(source, right):
             self.no_dict_llm_rejected += 1
@@ -2704,6 +2635,16 @@ class PipelineCorrector:
                 continue
 
             if len(wrong_word) < self.auto_learn_min_len or len(correct_word) < self.auto_learn_min_len:
+                continue
+            if wrong_word not in (original_sentence or ""):
+                continue
+            if self.no_dict_avoid_short_words and (
+                self._is_short_kana_fragment(wrong_word) or self._is_short_kana_fragment(correct_word)
+            ):
+                continue
+            if not self._passes_no_dict_pos_guard(original_sentence, wrong_word, correct_word):
+                continue
+            if not self._passes_no_dict_homophone_gate(original_sentence, wrong_word, correct_word):
                 continue
             if not self._is_reading_compatible(wrong_word, correct_word):
                 continue
@@ -2863,7 +2804,7 @@ class PipelineCorrector:
             return word
         
         correction_options = [c for c in candidates if c != word]
-        options = correction_options if self.disable_keep_choice else [word] + correction_options + ["KEEP_ORIGINAL"]
+        options = correction_options + ["KEEP_ORIGINAL"]
 
         if not correction_options:
             return word
@@ -2881,7 +2822,7 @@ class PipelineCorrector:
         
         output_format = f"""【出力形式】
     CHOICE: <候補>
-    候補は次の中から1つのみ: {candidates_str}
+    候補は次の中から1つのみ: {", ".join(options)}
     説明は絶対禁止"""
 
         if self.fast_llm_prompt:
@@ -2896,7 +2837,7 @@ class PipelineCorrector:
 - 前後3〜5語の連語（collocation）を優先
 - 単語意味の整合性を優先（文脈ベース）
 - 言い換え禁止
-{'- KEEP_ORIGINAL は全候補が不自然な時のみ' if not self.disable_keep_choice else '- KEEP_ORIGINAL は禁止'}
+- 不確実なら KEEP_ORIGINAL を選ぶ
 """
         else:
             prompt = f"""【同音異義語誤り修正タスク】
@@ -2910,11 +2851,11 @@ class PipelineCorrector:
 1. 選択肢以外の語を絶対に出力しない
 2. 言い換え・同義語置換を絶対にしない
 3. 文全体を書き直さない（1語だけ選ぶ）
-4. {'KEEP_ORIGINAL は最終手段。候補の中に文脈上より自然な語があれば必ずその候補を選ぶ' if not self.disable_keep_choice else 'KEEP_ORIGINAL は禁止。必ず候補の中から選ぶ'}
+4. 不確実なら KEEP_ORIGINAL を選ぶ
 5. 【最優先事項】意味が似ている別の単語への入れ替え（例: 意向→意見）はASR誤りでない限り厳禁
 6. 対象語の前後3〜5語の連語自然性を最優先する
 7. 文脈の意味整合を優先し、単純な文字一致より自然な候補を選ぶ
-8. {'同点で迷う場合のみ KEEP_ORIGINAL を許可する' if not self.disable_keep_choice else '同点でも必ず候補を選ぶ'}
+8. 同点でも必ず候補を選ぶ
 
 【Confusing Pairs Guidance】
 - 追求: 目標・利益・理想を求める
@@ -2944,20 +2885,16 @@ class PipelineCorrector:
             # Parse CHOICE format
             normalized = result.replace("CHOICE:", "").replace("「", "").replace("」", "").replace("'", "").replace('"', "").strip()
 
-            if normalized == "KEEP_ORIGINAL" and not self.disable_keep_choice:
-                normalized = word
-            if normalized == "KEEP_ORIGINAL" and self.disable_keep_choice:
-                normalized = ""
+            if normalized.upper() in {"KEEP_ORIGINAL", "KEEP"}:
+                return word
             
             # Match against options
-            final_choice = correction_options[0] if self.disable_keep_choice else word
-            if normalized in options:
+            final_choice = word
+            if normalized in correction_options:
                 final_choice = normalized
-            elif normalized == "KEEP_ORIGINAL" and not self.disable_keep_choice:
-                final_choice = word
             else:
                 # Fallback: contains check
-                for candidate in options:
+                for candidate in correction_options:
                     if candidate in result:
                         final_choice = candidate
                         break
@@ -2967,8 +2904,6 @@ class PipelineCorrector:
         except Exception as e:
             self._mark_llm_unavailable_if_rate_limited(e)
             print(f"LLM error: {e}")
-            if self.disable_keep_choice and correction_options:
-                return correction_options[0]
             return word
     
     def correct_sentence(self, sentence):
@@ -3072,11 +3007,6 @@ class PipelineCorrector:
                 if self._is_protected_word(word):
                     self._log_pos_prune(corrected, word, candidate, "protected_word_block")
                     return False
-                if self.no_dict_avoid_short_words and (
-                    self._is_short_kana_fragment(word) or self._is_short_kana_fragment(candidate)
-                ):
-                    self._log_pos_prune(corrected, word, candidate, "short_kana_block")
-                    return False
                 if not self._passes_dict_rewrite_guard(corrected, word, candidate):
                     self._log_pos_prune(corrected, word, candidate, "dict_pos_guard_block")
                     return False
@@ -3095,12 +3025,9 @@ class PipelineCorrector:
                 ):
                     action, candidate = self._llm_recheck_dict_replacement(corrected, word, best_dict, candidates)
                     if action == "KEEP":
-                        if self.disable_keep_choice and self.force_change_on_llm_uncertain:
-                            chosen = candidate if candidate and candidate in candidates and candidate != word else best_dict
-                        else:
-                            self.llm_recheck_keep_override += 1
-                            print(f"  [LLM-RECHECK] {word} kept")
-                            continue
+                        self.llm_recheck_keep_override += 1
+                        print(f"  [LLM-RECHECK] {word} kept")
+                        continue
                     if action == "ALT" and candidate and candidate in candidates and candidate != word:
                         chosen = candidate
                         self.llm_recheck_alt_accept += 1
@@ -3132,11 +3059,8 @@ class PipelineCorrector:
             ):
                 llm_choice = self.llm_select_best(corrected, word, candidates)
                 if llm_choice == word:
-                    if self.disable_keep_choice and self.force_change_on_llm_uncertain and best_dict and best_dict != word:
-                        llm_choice = best_dict
-                    else:
-                        print(f"  [LLM-] {word} kept")
-                        continue
+                    print(f"  [LLM-] {word} kept")
+                    continue
                 if llm_choice not in candidates:
                     print(f"  [LLM?] {word} -> {llm_choice} (invalid)")
                     continue
@@ -3158,12 +3082,6 @@ class PipelineCorrector:
             
             if self.enable_no_dict_detector:
                 should_route, target_hint = self._detect_no_dict_error(corrected)
-            
-            if not should_route and self.prioritize_pos_anomaly:
-                anomaly_target = self._detect_pos_anomaly_target(corrected)
-                if anomaly_target:
-                    should_route = True
-                    target_hint = anomaly_target
             if not should_route:
                 final_text, final_changes = _finalize_output(corrected, pre_changes)
                 if len(final_changes) == len(pre_changes):

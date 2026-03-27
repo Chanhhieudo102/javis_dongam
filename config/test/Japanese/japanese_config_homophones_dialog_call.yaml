@@ -4,11 +4,11 @@ path:
   label: D:\VJ\LLM-ASR-Error-Correction\data\japanese\label\label.txt
 
 model: qwen/qwen3-32b
-api_key: ${GROQ_API_KEY}
+api_key: ""
 base_url: https://api.groq.com/openai/v1
 use_groq_sdk: true
-temperature: 0.0
-top_p: 0.4
+temperature: 0.15
+top_p: 0.55
 max_completion_tokens: 400
 reasoning_effort: low
 max_api_retries: 3
@@ -25,11 +25,11 @@ pos_filter_rules:
   deny: [助詞, 助動詞, 記号]
 
 # Dictionary Matching
-dict_confidence_threshold: 1
+dict_confidence_threshold: 4
 llm_recheck_dict: true
 enable_llm_select: true
-llm_recheck_min_score: 2
-dict_recheck_margin: 1
+llm_recheck_min_score: 3
+dict_recheck_margin: 2
 enable_embedding_score_in_dict: false
 enable_embedding_recheck: false
 embedding_score_weight: 2.5
@@ -38,32 +38,37 @@ skip_filler_in_dict_stage: true
 protected_compounds:
   - 了解
 
-# Homophone Detection
-no_dict_require_reading_match: true
-no_dict_min_reading_similarity: 0.55
-no_dict_adaptive_similarity_floor: 0.70
-no_dict_require_explicit_homophone: false
-no_dict_force_when_detector_ok: true
+# Homophone Detection (Optimized for LLM Freedom)
+enable_no_dict_detector: true
 no_dict_route_unresolved: true
 no_dict_delegate_to_llm: true
+
 disable_keep_choice: true
 force_change_on_llm_uncertain: true
-no_dict_avoid_short_words: false
-no_dict_max_span_len: 8
-no_dict_max_len_delta: 4
-no_dict_sentence_min_similarity: 0.90
-no_dict_sentence_max_edit_chars: 12
-no_dict_enable_span_guard: false
+
+# Tắt toàn bộ màng lọc đếm chữ và đếm phát âm
+no_dict_require_reading_match: false
+no_dict_min_reading_similarity: 0.0
+no_dict_adaptive_similarity_floor: 0.0
+no_dict_require_explicit_homophone: false
 no_dict_enable_pos_guard: false
-enable_no_dict_detector: true
-prioritize_pos_anomaly: true
+no_dict_enable_span_guard: false
+no_dict_avoid_short_words: false
+prioritize_pos_anomaly: false
+
+# Nới lỏng tối đa các giới hạn chiều dài
+no_dict_max_span_len: 20
+no_dict_max_len_delta: 10
+no_dict_sentence_min_similarity: 0.0
+no_dict_sentence_max_edit_chars: 50
 
 # Auto-learning Configuration
 auto_learn_dictionary: true
 auto_learn_min_len: 2
-auto_learn_context_size: 2
+auto_learn_context_size: 4
 no_dict_auto_learn_from_llm: true
 no_dict_auto_learn_min_hits: 1
+no_dict_auto_learn_min_similarity: 0.75
 auto_learn_apply_on_verified_hits: true
 
 # Runtime Map Verification
@@ -74,36 +79,14 @@ runtime_map_blacklist_path: result/runtime_blacklist_homophone.jsonl
 
 # Collocation & Context Scoring
 enable_collocation_score: true
-collocation_weight: 3.5
-collocation_window_size: 4
-scoring_context_window: 7
+collocation_weight: 7.0
+collocation_window_size: 5
+scoring_context_window: 8
 collocation_corpus_paths:
   - data/japanese/label/label.txt
   - data/japanese/test/test.txt
 
-# Post-normalization normalization (convert various written forms to standard forms)
-enable_post_normalization: true
-post_normalization_map:
-  "致しました": "いたしました"
-  "致します": "いたします"
-  "下さい": "ください"
-  "宜しい": "よろしい"
-  "有難う": "ありがとう"
-  "頂き": "いただき"
-  "頂く": "いただく"
-  "下さ": "くださ"
-  "無い": "ない"
-  "有り": "あり"
-  "有る": "ある"
-  "居る": "いる"
-  "出来る": "できる"
-  "仕舞": "しま"
-  "事": "こと"
-  "所": "ところ"
-  "分か": "わか"
-  "掛け": "かけ"
-  "掛か": "かか"
-  "来ます": "きます"
+
 
 # LLM Fallback Prompt (when dictionary doesn't match)
 no_dict_prompt: |
