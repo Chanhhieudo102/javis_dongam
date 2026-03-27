@@ -45,16 +45,13 @@ python .\run_japanese_homophones.py
 
 - `run_japanese_homophones.py` (entrypoint)
 - `pipeline_correction.py` (core correction pipeline)
-- `tools/compute-wer.py` (WER/CER)
+- `tools/compute-wer.py` (WER)
+- `tools/compute-cer.py` (CER)
 - `tools/japanese_mecab_helper.py` (MeCab wrapper)
-- `tools/japanese_dictionary_loader.py` (dictionary loader)
-- `tools/llm_suggestion_logger.py` (optional LLM suggestion logging)
 - `config/test/Japanese/japanese_config_homophones_dialog_call.yaml` (runtime config)
 - `data/japanese/test/test.txt` (input)
 - `data/japanese/label/label.txt` (labels)
 - `data/japanese/dictionary/homophones.json` (homophone dictionary)
-- `data/japanese/dictionary/vocabulary.txt` (vocabulary metadata)
-- `data/japanese/dictionary/kanji_corrections.txt` (kanji normalization)
 
 ## 6) Notes
 
