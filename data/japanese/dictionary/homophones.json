@@ -1,0 +1,4108 @@
+{
+  "いこう": {
+    "default_candidate": "意向",
+    "candidates": [
+      {
+        "word": "意向",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "先方",
+            "契約",
+            "確認",
+            "プロジェクト"
+          ],
+          "require_collocation": [
+            "意向を確認"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "以降",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "時間的な順序",
+            "時間",
+            "日程",
+            "明日",
+            "以降"
+          ],
+          "require_collocation": [
+            "案内は明日以降にな"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "移行",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "システムや状態の変化"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "意蘊",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "意見",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "おおさか": {
+    "default_candidate": "大阪",
+    "candidates": [
+      {
+        "word": "大阪",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "大阪府",
+            "大阪市"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "大傘",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "きしゃ": {
+    "default_candidate": "貴社",
+    "candidates": [
+      {
+        "word": "貴社",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "会社への敬称"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "帰社",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "会社に戻る"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "汽車",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "列車",
+            "電車"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "記者",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "ジャーナリスト",
+            "報道"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "はし": {
+    "default_candidate": "橋",
+    "candidates": [
+      {
+        "word": "橋",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "川に架かる構造物"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "端",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "縁",
+            "末端"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "箸",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "食事用具"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "こうてい": {
+    "default_candidate": "工程",
+    "candidates": [
+      {
+        "word": "工程",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "作業の手順"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "公正",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "公平",
+            "正義"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "校庭",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "学校の庭",
+            "学校",
+            "子供",
+            "運動場"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "校訂",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "古典",
+            "文学",
+            "作業",
+            "専門家"
+          ],
+          "require_collocation": [
+            "この古典文学の校訂作"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "校定",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "校正",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "こうこう": {
+    "default_candidate": "高校",
+    "candidates": [
+      {
+        "word": "高校",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "高等学校"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "孝行",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "親孝行"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "かんこう": {
+    "default_candidate": "観光",
+    "candidates": [
+      {
+        "word": "観光",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "旅行",
+            "見物"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "感光",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "写真",
+            "光に反応"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "こうせい": {
+    "default_candidate": "構成",
+    "candidates": [
+      {
+        "word": "構成",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "組み立て"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "公正",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "公平さ"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "校正",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "原稿の修正",
+            "古典",
+            "文学",
+            "原稿",
+            "修正"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "校庭",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かいとう": {
+    "default_candidate": "回答",
+    "candidates": [
+      {
+        "word": "回答",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "質問への返答"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "解答",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "問題の答え"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "せいさく": {
+    "default_candidate": "制作",
+    "candidates": [
+      {
+        "word": "制作",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "作品を作る"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "政策",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "政府の方針"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "こうしょう": {
+    "default_candidate": "交渉",
+    "candidates": [
+      {
+        "word": "交渉",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "話し合い"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "高尚",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "上品",
+            "高級"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "しじ": {
+    "default_candidate": "指示",
+    "candidates": [
+      {
+        "word": "指示",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "命令",
+            "指図"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "支持",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "国民",
+            "政権",
+            "熱心",
+            "賛成"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "びょうしゃ": {
+    "default_candidate": "描写",
+    "candidates": [
+      {
+        "word": "描写",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "絵や文で表現"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "病者",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "病気の人"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "しんか": {
+    "default_candidate": "進化",
+    "candidates": [
+      {
+        "word": "進化",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "発展",
+            "進歩"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "真価",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "本当の価値"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "せいせん": {
+    "default_candidate": "生鮮",
+    "candidates": [
+      {
+        "word": "生鮮",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "新鮮な食品",
+            "スーパー",
+            "食品",
+            "売り場"
+          ],
+          "require_collocation": [
+            "スーパーの生鮮食品売"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "精選",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "厳選する"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "制鮮",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かんじ": {
+    "default_candidate": "幹事",
+    "candidates": [
+      {
+        "word": "幹事",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "取りまとめ役"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "漢字",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "中国の文字"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "しんかい": {
+    "default_candidate": "深海",
+    "candidates": [
+      {
+        "word": "深海",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "深い海"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "真価",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "本当の価値"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "いじょう": {
+    "default_candidate": "異常",
+    "candidates": [
+      {
+        "word": "異常",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "普通でない"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "以上",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "数量・範囲の基準"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "いし": {
+    "default_candidate": "意志",
+    "candidates": [
+      {
+        "word": "意志",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "自分の考え"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "遺志",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "故人の願い"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "ほけん": {
+    "default_candidate": "保険",
+    "candidates": [
+      {
+        "word": "保険",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "損害に備える"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "保健",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "健康維持"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "かてい": {
+    "default_candidate": "家庭",
+    "candidates": [
+      {
+        "word": "家庭",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "家族の生活"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "課程",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "学習の段階"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "かんしん": {
+    "default_candidate": "関心",
+    "candidates": [
+      {
+        "word": "関心",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "興味",
+            "注目",
+            "政治"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "感心",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "演奏",
+            "素晴らしい",
+            "感動"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "歓心",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "関振",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "すすめる": {
+    "default_candidate": "進める",
+    "candidates": [
+      {
+        "word": "進める",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "作業",
+            "仕事",
+            "計画"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "勧める",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "すすめ": {
+    "default_candidate": "進め",
+    "candidates": [
+      {
+        "word": "進め",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "作業",
+            "仕事",
+            "計画",
+            "今日",
+            "丁寧"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "勧め",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "きんりん": {
+    "default_candidate": "近隣",
+    "candidates": [
+      {
+        "word": "近隣",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "騒音",
+            "トラブル",
+            "住民"
+          ],
+          "require_collocation": [
+            "住民には挨拶"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "金輪",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "そうさ": {
+    "default_candidate": "操作",
+    "candidates": [
+      {
+        "word": "操作",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "機械を動かす"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "捜査",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "犯罪の調査"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "そうぞう": {
+    "default_candidate": "創造",
+    "candidates": [
+      {
+        "word": "創造",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "新しく作る"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "想像",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "心に思い描く"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "かいほう": {
+    "default_candidate": "開放",
+    "candidates": [
+      {
+        "word": "開放",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "開けること"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "解放",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "自由にする"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "ぎむ": {
+    "default_candidate": "義務",
+    "candidates": [
+      {
+        "word": "義務",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "しなければならないこと",
+            "納税"
+          ],
+          "require_collocation": [
+            "義務である",
+            "義務を噛み締め"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "偽物",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "喜び",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "きょうせい": {
+    "default_candidate": "矯正",
+    "candidates": [
+      {
+        "word": "矯正",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "正しく直す"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "強制",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "無理やり"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "とくちょう": {
+    "default_candidate": "特徴",
+    "candidates": [
+      {
+        "word": "特徴",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "特色",
+            "特性"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "特調",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "たいしょう": {
+    "default_candidate": "対象",
+    "candidates": [
+      {
+        "word": "対象",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "目標",
+            "相手"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "対照",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "比較する"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "対称",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "左右対称"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "こーひー": {
+    "default_candidate": "コーヒー",
+    "candidates": [
+      {
+        "word": "コーヒー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "飲み物",
+            "喫茶店",
+            "朝"
+          ],
+          "require_collocation": [
+            "朝はコーヒーを一杯飲"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "こうひー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "コヒー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "めーる": {
+    "default_candidate": "メール",
+    "candidates": [
+      {
+        "word": "メール",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "連絡",
+            "送信",
+            "資料"
+          ],
+          "require_collocation": [
+            "会議資料はメールで共"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "めいる",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "メイル",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "でーた": {
+    "default_candidate": "データ",
+    "candidates": [
+      {
+        "word": "データ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "分析",
+            "数値",
+            "記録"
+          ],
+          "require_collocation": [
+            "実験データを正確に記"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "でえた",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "ディータ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "いんたーねっと": {
+    "default_candidate": "インターネット",
+    "candidates": [
+      {
+        "word": "インターネット",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "通信",
+            "接続",
+            "回線"
+          ],
+          "require_collocation": [
+            "インターネット接続が"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "いんたねっと",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "インタネット",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "きゃんせる": {
+    "default_candidate": "キャンセル",
+    "candidates": [
+      {
+        "word": "キャンセル",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "予約",
+            "取り消し",
+            "手続き"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "きゃんせる",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "キヤンセル",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "あっぷでーと": {
+    "default_candidate": "アップデート",
+    "candidates": [
+      {
+        "word": "アップデート",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "更新",
+            "アプリ",
+            "バージョン"
+          ],
+          "require_collocation": [
+            "ンにアップデート"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "あぷでーと",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "アップデイト",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "さーばー": {
+    "default_candidate": "サーバー",
+    "candidates": [
+      {
+        "word": "サーバー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "運用",
+            "通信",
+            "障害"
+          ],
+          "require_collocation": [
+            "サーバー障害の影響を"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "さばー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "サーバ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ふぁいる": {
+    "default_candidate": "ファイル",
+    "candidates": [
+      {
+        "word": "ファイル",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "保存",
+            "添付",
+            "共有"
+          ],
+          "require_collocation": [
+            "必要なファイルを先に"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "ふぁいる",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "フアイル",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ろぐいん": {
+    "default_candidate": "ログイン",
+    "candidates": [
+      {
+        "word": "ログイン",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "認証",
+            "ID",
+            "パスワード"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "ろぐいん",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "ログインー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ろぐあうと": {
+    "default_candidate": "ログアウト",
+    "candidates": [
+      {
+        "word": "ログアウト",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "終了",
+            "セキュリティ",
+            "端末"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "ろぐあうと",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "ログアウトー",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "すまほ": {
+    "default_candidate": "スマホ",
+    "candidates": [
+      {
+        "word": "スマホ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "端末",
+            "連絡",
+            "アプリ"
+          ],
+          "require_collocation": [
+            "スマホで二段階認証を"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "すまほ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "スマフォ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ぱそこん": {
+    "default_candidate": "パソコン",
+    "candidates": [
+      {
+        "word": "パソコン",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "作業",
+            "端末",
+            "業務"
+          ],
+          "require_collocation": [
+            "この作業はパソコンで"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "ぱそこん",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "パーソコン",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かたかな": {
+    "default_candidate": "カタカナ",
+    "candidates": [
+      {
+        "word": "カタカナ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "表記",
+            "外来語",
+            "読み"
+          ],
+          "require_collocation": [
+            "外来語はカタカナで表"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "かたかな",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "カタ仮名",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ひらがな": {
+    "default_candidate": "ひらがな",
+    "candidates": [
+      {
+        "word": "ひらがな",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "表記",
+            "読み",
+            "初学者"
+          ],
+          "require_collocation": [
+            "名前をひらがなで書い"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "ヒラガナ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "平仮名",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かな": {
+    "default_candidate": "仮名",
+    "candidates": [
+      {
+        "word": "仮名",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "表記",
+            "読み",
+            "国語"
+          ],
+          "require_collocation": [
+            "語は仮名で示"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "かな",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "カナ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "せいき": {
+    "default_candidate": "世紀",
+    "candidates": [
+      {
+        "word": "世紀",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "100年の期間"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "正気",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "正常な心"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "こうかい": {
+    "default_candidate": "後悔",
+    "candidates": [
+      {
+        "word": "後悔",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "悔やむ"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "公開",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "公表する"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "航海",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "船で海を渡る"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "きけん": {
+    "default_candidate": "危険",
+    "candidates": [
+      {
+        "word": "危険",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "リスク",
+            "危ない"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "棄権",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "権利を放棄"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "器件",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "せいしん": {
+    "default_candidate": "精神",
+    "candidates": [
+      {
+        "word": "精神",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "心",
+            "魂"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "清新",
+        "pos_tags": [
+          "形状詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "こうどう": {
+    "default_candidate": "行動",
+    "candidates": [
+      {
+        "word": "行動",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "動作",
+            "振る舞い"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "高度",
+        "pos_tags": [
+          "形状詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "高い程度"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "坑道",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "しゅうかん": {
+    "default_candidate": "習慣",
+    "candidates": [
+      {
+        "word": "習慣",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "癖",
+            "慣習"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "週間",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "7日間"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "じてん": {
+    "default_candidate": "事典",
+    "candidates": [
+      {
+        "word": "事典",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "百科事典"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "自転",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "自ら回転"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "辞典",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "言葉の辞書"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "けいこう": {
+    "default_candidate": "傾向",
+    "candidates": [
+      {
+        "word": "傾向",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "トレンド"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "蛍光",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "光る"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "軽口",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "しこう": {
+    "default_candidate": "思考",
+    "candidates": [
+      {
+        "word": "思考",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "考えること",
+            "深める",
+            "時間",
+            "人間"
+          ],
+          "require_collocation": [
+            "人間にとって思考を深"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "嗜好",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "好み"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "志向",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "目指す方向"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "至高",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "料理長",
+            "逸品"
+          ],
+          "require_collocation": [
+            "まさに至高の逸品と言"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "いしき": {
+    "default_candidate": "意識",
+    "candidates": [
+      {
+        "word": "意識",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "認識",
+            "自覚"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "異色",
+        "pos_tags": [
+          "形状詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かくしん": {
+    "default_candidate": "確信",
+    "candidates": [
+      {
+        "word": "確信",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "確かな信念"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "核心",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "中心",
+            "本質"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "革新",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "新しく改める"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "いがい": {
+    "default_candidate": "以外",
+    "candidates": [
+      {
+        "word": "以外",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "全員",
+            "出席"
+          ],
+          "require_collocation": [
+            "今日は彼以外の全員が"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "意外",
+        "pos_tags": [
+          "形状詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "こうせき": {
+    "default_candidate": "功績",
+    "candidates": [
+      {
+        "word": "功績",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "称える",
+            "記念碑"
+          ],
+          "require_collocation": [
+            "多大な功績を称え"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "公籍",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "してん": {
+    "default_candidate": "視点",
+    "candidates": [
+      {
+        "word": "視点",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "多角的",
+            "見る"
+          ],
+          "require_collocation": [
+            "多角的な視点から物事"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "支店",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "とうそう": {
+    "default_candidate": "逃走",
+    "candidates": [
+      {
+        "word": "逃走",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "犯人",
+            "振り切る"
+          ],
+          "require_collocation": [
+            "夜の街へ逃走した"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "闘争",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "げんしょう": {
+    "default_candidate": "減少",
+    "candidates": [
+      {
+        "word": "減少",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "人口",
+            "急速"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "現象",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ついきゅう": {
+    "default_candidate": "追及",
+    "candidates": [
+      {
+        "word": "追及",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "不正",
+            "政治家",
+            "徹底的"
+          ],
+          "require_collocation": [
+            "徹底的に追及する構え"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "追求",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "企業",
+            "利益"
+          ],
+          "require_collocation": [
+            "益を追求しなければな"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "追究",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "真理",
+            "学者",
+            "宇宙"
+          ],
+          "require_collocation": [
+            "真理を追究"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "じしん": {
+    "default_candidate": "自信",
+    "candidates": [
+      {
+        "word": "自信",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "能力",
+            "堂々",
+            "プレゼン"
+          ],
+          "require_collocation": [
+            "能力に自信を持"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "自身",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "彼",
+            "被災",
+            "経験"
+          ],
+          "require_collocation": [
+            "彼自身が被災した経験"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "へんかん": {
+    "default_candidate": "返還",
+    "candidates": [
+      {
+        "word": "返還",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "領土",
+            "交渉"
+          ],
+          "require_collocation": [
+            "返還された"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "変換",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "しゅうそく": {
+    "default_candidate": "終息",
+    "candidates": [
+      {
+        "word": "終息",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "感染症",
+            "流行",
+            "平穏"
+          ],
+          "require_collocation": [
+            "終息し平穏が戻って"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "修正",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "いぎ": {
+    "default_candidate": "異議",
+    "candidates": [
+      {
+        "word": "異議",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "判決",
+            "弁護団",
+            "唱える"
+          ],
+          "require_collocation": [
+            "護団は異議を唱える構"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "意義",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "活動",
+            "続ける"
+          ],
+          "require_collocation": [
+            "意義があるので"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "すいしん": {
+    "default_candidate": "推進",
+    "candidates": [
+      {
+        "word": "推進",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "宇宙開発",
+            "人類",
+            "夢"
+          ],
+          "require_collocation": [
+            "宇宙開発の推進は人類"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "水深",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "くじゅつ": {
+    "default_candidate": "供述",
+    "candidates": [
+      {
+        "word": "供述",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "犯人",
+            "遺族",
+            "怒り",
+            "隠せない"
+          ],
+          "require_collocation": [
+            "犯人の身勝手な供述に"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "回答",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "解答",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "そうさく": {
+    "default_candidate": "創作",
+    "candidates": [
+      {
+        "word": "創作",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "詩人",
+            "季節",
+            "言葉"
+          ],
+          "require_collocation": [
+            "言葉で創作している詩"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "制作",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "政策",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ないけん": {
+    "default_candidate": "内見",
+    "candidates": [
+      {
+        "word": "内見",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "不動産",
+            "物件",
+            "見学",
+            "案内"
+          ],
+          "require_collocation": [
+            "希望日時を担"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "内検",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "とうの": {
+    "default_candidate": "東野",
+    "candidates": [
+      {
+        "word": "東野",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "人名",
+            "苗字",
+            "担当",
+            "お電話"
+          ],
+          "require_collocation": [
+            "東野です"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "トウノ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "唐の",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "いちど": {
+    "default_candidate": "一度",
+    "candidates": [
+      {
+        "word": "一度",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "再確認",
+            "依頼",
+            "お願い",
+            "丁寧"
+          ],
+          "require_collocation": [
+            "もう一度お願いします"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "一同",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "いっしょ": {
+    "default_candidate": "一緒",
+    "candidates": [
+      {
+        "word": "一緒",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "同行",
+            "同時",
+            "確認",
+            "同席"
+          ],
+          "require_collocation": [
+            "担当者も一緒に伺いま"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "一生",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "がいじん": {
+    "default_candidate": "外人",
+    "candidates": [
+      {
+        "word": "外人",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "会話",
+            "語彙",
+            "聞き取り",
+            "確認"
+          ],
+          "require_collocation": [
+            "その単語は外人のこと"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "害人",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かいしゃめい": {
+    "default_candidate": "会社名",
+    "candidates": [
+      {
+        "word": "会社名",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "法人",
+            "名称",
+            "確認",
+            "電話"
+          ],
+          "require_collocation": [
+            "恐れ入りますが会社名"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "会社命",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "いたします": {
+    "default_candidate": "致します",
+    "candidates": [
+      {
+        "word": "致します",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "敬語",
+            "依頼",
+            "案内",
+            "連絡"
+          ],
+          "require_collocation": [
+            "絡致します"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "板します",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "いたしました": {
+    "default_candidate": "いたしました",
+    "candidates": [
+      {
+        "word": "いたしました",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "敬語",
+            "謝罪",
+            "完了",
+            "対応"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "いたしまた",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "はい": {
+    "default_candidate": "はい",
+    "candidates": [
+      {
+        "word": "はい",
+        "pos_tags": [
+          "感動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "句読点",
+            "ノイズ",
+            "ASR",
+            "終端"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "はい.",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "しよう": {
+    "default_candidate": "仕様",
+    "candidates": [
+      {
+        "word": "仕様",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "機能",
+            "設計",
+            "要件",
+            "ドキュメント"
+          ],
+          "require_collocation": [
+            "仕様を確認"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "使用",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "利用",
+            "端末",
+            "アプリ"
+          ],
+          "require_collocation": [
+            "使用を開始"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "私用",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "個人的",
+            "外出"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ほしょう": {
+    "default_candidate": "保証",
+    "candidates": [
+      {
+        "word": "保証",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "品質",
+            "契約",
+            "サポート"
+          ],
+          "require_collocation": [
+            "品質を保証"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "補償",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "損害",
+            "事故",
+            "賠償"
+          ],
+          "require_collocation": [
+            "損害を補償"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "保障",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "権利",
+            "安全",
+            "制度"
+          ],
+          "require_collocation": [
+            "権利を保障"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      }
+    ]
+  },
+  "きどう": {
+    "default_candidate": "起動",
+    "candidates": [
+      {
+        "word": "起動",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "システム",
+            "PC",
+            "アプリ",
+            "サーバー"
+          ],
+          "require_collocation": [
+            "システムを起動"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "軌道",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "衛星",
+            "宇宙",
+            "軌跡"
+          ],
+          "require_collocation": [
+            "軌道に乗"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "機動",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "機動隊",
+            "部隊"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かいせん": {
+    "default_candidate": "回線",
+    "candidates": [
+      {
+        "word": "回線",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "通信",
+            "ネットワーク",
+            "速度",
+            "障害"
+          ],
+          "require_collocation": [
+            "回線が不安定"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "海戦",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "艦隊",
+            "戦史"
+          ],
+          "require_collocation": [
+            "海戦の記録"
+          ],
+          "exclude": []
+        },
+        "weight": 1.0
+      },
+      {
+        "word": "改選",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "選挙",
+            "議員"
+          ],
+          "require_collocation": [
+            "改選の年"
+          ],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "さいかい": {
+    "default_candidate": "再開",
+    "candidates": [
+      {
+        "word": "再開",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "会議",
+            "サービス",
+            "営業"
+          ],
+          "require_collocation": [
+            "営業を再開"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "再会",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "友人",
+            "久しぶり"
+          ],
+          "require_collocation": [
+            "友人と再会"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "最下位",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "順位",
+            "リーグ"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "きかん": {
+    "default_candidate": "期間",
+    "candidates": [
+      {
+        "word": "期間",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "締切",
+            "日程",
+            "延長"
+          ],
+          "require_collocation": [
+            "募集期間"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "機関",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "研究",
+            "行政",
+            "組織"
+          ],
+          "require_collocation": [
+            "研究機関"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "帰還",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "任務",
+            "帰国",
+            "宇宙船"
+          ],
+          "require_collocation": [
+            "無事に帰還"
+          ],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かんしょう": {
+    "default_candidate": "鑑賞",
+    "candidates": [
+      {
+        "word": "鑑賞",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "映画",
+            "音楽",
+            "美術"
+          ],
+          "require_collocation": [
+            "映画を鑑賞"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "干渉",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "ノイズ",
+            "妨害",
+            "口出し"
+          ],
+          "require_collocation": [
+            "電波干渉"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "観賞",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "植物",
+            "観賞用"
+          ],
+          "require_collocation": [
+            "観賞用の花"
+          ],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "しょうにん": {
+    "default_candidate": "承認",
+    "candidates": [
+      {
+        "word": "承認",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "申請",
+            "決裁",
+            "ワークフロー"
+          ],
+          "require_collocation": [
+            "承認を依頼"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "証人",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "裁判",
+            "証言"
+          ],
+          "require_collocation": [
+            "証人として出廷"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "商人",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "商売",
+            "市場"
+          ],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "たいき": {
+    "default_candidate": "待機",
+    "candidates": [
+      {
+        "word": "待機",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "待つ",
+            "順番",
+            "オペレーター"
+          ],
+          "require_collocation": [
+            "しばらく待機"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "大気",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "気象",
+            "地球",
+            "環境"
+          ],
+          "require_collocation": [
+            "大気汚染"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "退期",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ただいま": {
+    "default_candidate": "ただいま",
+    "candidates": [
+      {
+        "word": "ただいま",
+        "pos_tags": [
+          "副詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "席を外しております",
+            "不在",
+            "現在"
+          ],
+          "require_collocation": [
+            "ただいま席を外しておりまして"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "只今",
+        "pos_tags": [
+          "副詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ばんごう": {
+    "default_candidate": "番号",
+    "candidates": [
+      {
+        "word": "番号",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "電話",
+            "携帯",
+            "確認",
+            "番号"
+          ],
+          "require_collocation": [
+            "携帯の番号",
+            "電話番号"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "番外",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かかって": {
+    "default_candidate": "かかって",
+    "candidates": [
+      {
+        "word": "かかって",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "電話",
+            "連絡",
+            "到来"
+          ],
+          "require_collocation": [
+            "かかってきます",
+            "電話がかかって"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "勝って",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "まちがって": {
+    "default_candidate": "間違って",
+    "candidates": [
+      {
+        "word": "間違って",
+        "pos_tags": [
+          "動詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "誤り",
+            "判断",
+            "確認"
+          ],
+          "require_collocation": [
+            "間違ってはない",
+            "間違っていない"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "街って",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "かんばん": {
+    "default_candidate": "看板",
+    "candidates": [
+      {
+        "word": "看板",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "物件",
+            "不動産",
+            "貼ってある",
+            "売り物件"
+          ],
+          "require_collocation": [
+            "看板が貼ってある",
+            "売り物件という看板"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "勘弁",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "まちがい": {
+    "default_candidate": "間違い",
+    "candidates": [
+      {
+        "word": "間違い",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "誤り",
+            "正誤",
+            "確認"
+          ],
+          "require_collocation": [
+            "間違いない",
+            "間違いですね"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "街外",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  },
+  "ちらし": {
+    "default_candidate": "チラシ",
+    "candidates": [
+      {
+        "word": "チラシ",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [
+            "広告",
+            "物件",
+            "案内",
+            "見る"
+          ],
+          "require_collocation": [
+            "チラシを見てくださった",
+            "チラシを見る"
+          ],
+          "exclude": []
+        },
+        "weight": 1.2
+      },
+      {
+        "word": "散らし",
+        "pos_tags": [
+          "名詞"
+        ],
+        "context_rules": {
+          "require_any": [],
+          "require_collocation": [],
+          "exclude": []
+        },
+        "weight": 1.0
+      }
+    ]
+  }
+}

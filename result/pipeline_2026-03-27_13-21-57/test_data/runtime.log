@@ -1,0 +1,111 @@
+model=qwen/qwen3-32b
+temperature=0.0
+top_p=0.4
+input=D:\VJ\LLM-ASR-Error-Correction\data\japanese\test\test.txt
+label=D:\VJ\LLM-ASR-Error-Correction\data\japanese\label\label.txt
+sentences=51
+
+[INIT]
+Loading Japanese dictionaries...
+Warning: Homophone dictionary not found: data/japanese/dictionary\homophones.txt
+Loaded 1 kanji corrections from data/japanese/dictionary\kanji_corrections.txt
+Warning: Proper nouns dictionary not found: data/japanese/dictionary\proper_nouns.txt
+Loaded 365 vocabulary entries from data/japanese/dictionary\vocabulary.txt
+All dictionaries loaded successfully!
+
+  [POS] MeCab helper enabled
+Loaded 96 reading groups from data/japanese/dictionary/homophones.json
+
+[1/51] AUTO_0001
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  只今 → ただいま
+
+[2/51] JH_102
+  [DICT] 番外 → 番号 (confidence: 9)
+
+[4/51] JH_104
+  [DICT] 意向 → 以降 (confidence: 7)
+
+[5/51] JH_105
+[PROPOSER-ERROR] AuthenticationError: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+
+[6/51] JH_106
+  [DICT] 勘弁 → 看板 (confidence: 8)
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  番号 → 番外
+
+[11/51] JH_111
+  [DICT] 意向 → 以降 (confidence: 11)
+
+[13/51] JH_113
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  番号 → 番外
+
+[19/51] JH_119
+  [DICT] 散らし → チラシ (confidence: 1)
+
+[20/51] JH_120
+[PROPOSER-ERROR] AuthenticationError: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+
+[23/51] JH_123
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  内検 → 内見
+  [DICT] 散らし → チラシ (confidence: 1)
+
+[24/51] JH_124
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  内検 → 内見
+
+[25/51] JH_125
+  [DICT] 意向 → 以降 (confidence: 11)
+
+[27/51] JD_001
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  東野 → トウノ
+
+[38/51] JD_012
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  一緒 → 一生
+
+[41/51] JD_015
+LLM error: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+  [LLM]  外人 → 害人
+
+[45/51] JD_019
+[PROPOSER-ERROR] AuthenticationError: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+
+[46/51] JD_020
+[PROPOSER-ERROR] AuthenticationError: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+
+[PIPELINE_STATS]
+
+============================================================
+PIPELINE STATISTICS
+============================================================
+Total sentences:      51
+Dict corrections:     7
+LLM corrections:      8
+No change needed:     17
+No-dict routed:       5
+No-dict LLM calls:    4
+No-dict changed:      0
+No-dict kept:         5
+No-dict rejected:     0
+No-dict pair verify:  0
+No-dict auto-learned: 0
+No-dict local rescue: 0
+No-dict short rejects:0
+POS candidates pruned:0
+POS prune events:     1
+POS guard rejects:    0
+LLM recheck calls:    2
+LLM recheck DICT:     2
+LLM recheck KEEP:     0
+LLM recheck ALT ok:   0
+Embedding hints used: 10
+Runtime map learned:  0
+Runtime map applied:  0
+Post-normalized sent.:37
+Total corrections:    34
+============================================================
+

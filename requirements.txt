@@ -1,0 +1,5 @@
+pyyaml
+openai
+groq
+mecab-python3
+unidic-lite

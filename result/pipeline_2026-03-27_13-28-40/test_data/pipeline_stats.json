@@ -1,0 +1,19 @@
+{
+  "total_checked": 51,
+  "dict_corrected": 5,
+  "llm_corrected": 9,
+  "llm_suggested": 0,
+  "no_change": 17,
+  "no_dict_routed": 5,
+  "no_dict_llm_calls": 4,
+  "no_dict_llm_changed": 0,
+  "no_dict_llm_kept": 5,
+  "no_dict_llm_rejected": 0,
+  "no_dict_short_rejects": 0,
+  "no_dict_pair_verified_accept": 0,
+  "no_dict_auto_learned": 0,
+  "runtime_map_learned": 0,
+  "runtime_map_applied": 0,
+  "post_normalized_sentences": 37,
+  "no_dict_pre_normalized_sentences": 3
+}
