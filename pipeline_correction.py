@@ -325,11 +325,13 @@ class PipelineCorrector:
             config.get("verified_runtime_persist_min_hits", self.verified_runtime_min_hits)
         )
         self.runtime_map_blacklist_path = config.get("runtime_map_blacklist_path", "result/runtime_blacklist_homophone.jsonl")
+        self.blacklist_on_incorrect_feedback = bool(config.get("blacklist_on_incorrect_feedback", False))
         self.use_vocab_loader = config.get("use_vocab_loader", True)
         self.vocab_freq_weight = float(config.get("vocab_freq_weight", 0.6))
         self.dictionary_dir = config.get("dictionary_dir", "data/japanese/dictionary")
 
         self._mecab_tagger = None
+        self._mecab_yomi_tagger = None
         self._morph_analyzer = None
         self._candidate_pos_cache = {}
         self._reading_cache = {}
@@ -357,6 +359,7 @@ class PipelineCorrector:
         self._build_reading_index()
         self._load_runtime_blacklist()
         self._load_verified_runtime_state()
+        self._promote_runtime_map_to_dictionary()
         
         self.logger = None
         if self.enable_logging:
@@ -392,6 +395,9 @@ class PipelineCorrector:
         self._last_used_llm = False
         self._last_no_dict_mode = ""
         self._llm_unavailable = False
+        self._last_llm_pairs = []
+        self._last_no_dict_pairs = []
+        self._pending_no_dict_pairs = {}
 
     def _sanitize_dictionary_token(self, token):
         """Normalize candidate tokens from dictionary/runtime to avoid punctuation noise."""
@@ -714,6 +720,66 @@ class PipelineCorrector:
         """Return True if mapping is listed in blacklist file."""
         return (wrong_word, correct_word) in self._runtime_blacklist
 
+    def _append_runtime_blacklist(
+        self,
+        wrong_word,
+        correct_word,
+        reason="feedback_incorrect",
+        context_original="",
+        context_corrected="",
+        context_expected="",
+    ):
+        """Append one bad mapping to blacklist file and in-memory set."""
+        wrong = (wrong_word or "").strip()
+        correct = (correct_word or "").strip()
+        if not wrong or not correct or wrong == correct:
+            return
+        if self._is_blacklisted_mapping(wrong, correct):
+            return
+
+        self._runtime_blacklist.add((wrong, correct))
+        if not self.runtime_map_blacklist_path:
+            return
+
+        try:
+            os.makedirs(os.path.dirname(self.runtime_map_blacklist_path), exist_ok=True)
+            payload = {
+                "timestamp": int(time.time()),
+                "wrong_word": wrong,
+                "correct_word": correct,
+                "reason": reason,
+            }
+            if context_original:
+                payload["context_original"] = context_original
+            if context_corrected:
+                payload["context_corrected"] = context_corrected
+            if context_expected:
+                payload["context_expected"] = context_expected
+            with open(self.runtime_map_blacklist_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
+    def _drop_runtime_mapping(self, wrong_word, correct_word=""):
+        """Remove a mapping from verified runtime caches and persist state."""
+        wrong = (wrong_word or "").strip()
+        correct = (correct_word or "").strip()
+        if not wrong:
+            return
+
+        if correct:
+            self._verified_mapping_hits.pop((wrong, correct), None)
+        else:
+            for key in list(self._verified_mapping_hits.keys()):
+                if key[0] == wrong:
+                    self._verified_mapping_hits.pop(key, None)
+
+        if wrong in self._verified_runtime_map:
+            if not correct or self._verified_runtime_map.get(wrong) == correct:
+                self._verified_runtime_map.pop(wrong, None)
+
+        self._persist_verified_runtime_state()
+
     def _load_verified_runtime_state(self):
         """Load persisted verified runtime map and drop expired entries by TTL."""
         path = self.verified_runtime_path
@@ -770,6 +836,27 @@ class PipelineCorrector:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
+
+    def _promote_runtime_map_to_dictionary(self):
+        """Promote persisted runtime verified mappings into the main JSON dictionary."""
+        if not self.auto_learn_dictionary:
+            return
+        if not self._verified_runtime_map:
+            return
+        for wrong_word, correct_word in list(self._verified_runtime_map.items()):
+            if not wrong_word or not correct_word or wrong_word == correct_word:
+                continue
+            hits = int(self._verified_mapping_hits.get((wrong_word, correct_word), 1) or 1)
+            try:
+                self._add_learned_homophone_entry(
+                    wrong_word,
+                    correct_word,
+                    context_hint="runtime_verified",
+                    source="llm_verified",
+                    freq=hits,
+                )
+            except Exception:
+                continue
 
     def _log_pos_prune(self, sentence, word, candidate, reason, source_pos=None, candidate_pos=None):
         """Persist detailed POS prune events for later rule tuning."""
@@ -994,6 +1081,57 @@ class PipelineCorrector:
                     "contexts": contexts,
                     "candidate_rules": candidate_rules,
                     "reading": reading,
+                }
+            )
+
+        # Fallback: MeCab can split unknown compounds and miss newly learned words.
+        # Scan dictionary surfaces directly so learned entries are reusable next runs.
+        for source_word in sorted(self.homophones.keys(), key=lambda x: len(x), reverse=True):
+            token = (source_word or "").strip()
+            if len(token) < 2:
+                continue
+            if not re.search(r"[\u3040-\u30ff\u4e00-\u9fff々ヶー]", token):
+                continue
+
+            start = sentence.find(token)
+            if start < 0:
+                continue
+            key = (start, token)
+            if key in seen:
+                continue
+
+            info = self.homophones.get(token, {}) or {}
+            candidates = [c for c in info.get("candidates", []) if c and c != token]
+            if not candidates:
+                continue
+
+            metadata = info.get("metadata", {}) if isinstance(info, dict) else {}
+            raw_contexts = info.get("contexts", {}) if isinstance(info, dict) else {}
+            contexts = {k: list(v or []) for k, v in (raw_contexts or {}).items()}
+            candidate_rules = {}
+            for candidate in candidates:
+                meta = metadata.get(candidate, {}) if isinstance(metadata, dict) else {}
+                rule = {
+                    "pos_tags": list(meta.get("pos_tags", []) or []),
+                    "context_rules": dict(meta.get("context_rules", {}) or {}),
+                    "weight": float(meta.get("weight", 1.0) or 1.0),
+                }
+                candidate_rules[candidate] = rule
+                rule_ctx = rule.get("context_rules", {}) if isinstance(rule, dict) else {}
+                require_any = rule_ctx.get("require_any", []) if isinstance(rule_ctx, dict) else []
+                require_collocation = rule_ctx.get("require_collocation", []) if isinstance(rule_ctx, dict) else []
+                if candidate not in contexts:
+                    contexts[candidate] = list(dict.fromkeys((require_any or []) + (require_collocation or [])))
+
+            seen.add(key)
+            results.append(
+                {
+                    "word": token,
+                    "position": start,
+                    "candidates": candidates,
+                    "contexts": contexts,
+                    "candidate_rules": candidate_rules,
+                    "reading": "",
                 }
             )
         return results
@@ -1458,6 +1596,48 @@ class PipelineCorrector:
         source = str(meta.get("source", "") or "")
         return source in self.dict_boundary_override_sources
 
+    def _resolve_learning_reading(self, wrong_word, correct_word, context_hint=""):
+        """Resolve stable reading key for learned pairs from dictionary/context/MeCab fallbacks."""
+        wrong = (wrong_word or "").strip()
+        correct = (correct_word or "").strip()
+        if not wrong or not correct:
+            return ""
+
+        # 1) Prefer readings already known by homophone map.
+        reading_votes = []
+        for token in (wrong, correct):
+            info = self.homophones.get(token, {}) if token else {}
+            for reading in info.get("readings", []) or []:
+                rr = self._normalize_reading_key(reading)
+                if rr:
+                    reading_votes.append(rr)
+        if reading_votes:
+            return max(Counter(reading_votes).items(), key=lambda x: x[1])[0]
+
+        # 2) Reuse existing reading groups containing either token.
+        for reading, group in (self._reading_groups or {}).items():
+            words = set(group.get("words", []) or [])
+            if wrong in words or correct in words:
+                return reading
+
+        # 3) If context sentence is available, use token reading from sentence analysis.
+        if context_hint:
+            for token in self._analyze_morphemes(context_hint):
+                surface = (token.get("surface") or "").strip()
+                if surface not in {wrong, correct}:
+                    continue
+                rr = self._normalize_reading_key(token.get("reading", ""))
+                if rr:
+                    return rr
+
+        # 4) Final fallback: infer from each token directly.
+        for token in (correct, wrong):
+            rr = self._normalize_reading_key(self._reading_for_text(token))
+            if rr:
+                return rr
+
+        return ""
+
     def _add_learned_homophone_entry(self, wrong_word, correct_word, context_hint="", source="auto_learned", freq=1):
         """Append a learned homophone mapping to the main dictionary file."""
         wrong_word = (wrong_word or "").strip()
@@ -1474,10 +1654,6 @@ class PipelineCorrector:
         if "|" in wrong_word or "|" in correct_word or "," in wrong_word or "," in correct_word:
             return False
 
-        existing_correct = self.homophones.get(wrong_word, {}).get("candidates", [])
-        if correct_word in existing_correct:
-            return False
-
         if not str(self.homophones_file).lower().endswith(".json"):
             return False
 
@@ -1489,7 +1665,7 @@ class PipelineCorrector:
                 if isinstance(loaded, dict):
                     payload = loaded
 
-            reading = self._normalize_reading_key(self._reading_for_text(correct_word) or self._reading_for_text(wrong_word))
+            reading = self._resolve_learning_reading(wrong_word, correct_word, context_hint=context_hint)
             if not reading:
                 return False
 
@@ -1507,16 +1683,36 @@ class PipelineCorrector:
                 group["candidates"] = candidates
 
             existing_words = set()
+            existing_items = {}
             for item in candidates:
                 if isinstance(item, dict):
                     w = str(item.get("word", "") or "").strip()
                     if w:
                         existing_words.add(w)
+                        existing_items[w] = item
 
             # If this pair is already representable inside the same reading group,
-            # do not rewrite the file or count as a new learning event.
+            # persist verification signal by boosting confidence of correct word.
             if wrong_word in existing_words and correct_word in existing_words:
-                return False
+                updated_existing = False
+                if source in {"llm_verified", "human_verified", "auto_runtime"}:
+                    correct_item = existing_items.get(correct_word)
+                    if isinstance(correct_item, dict):
+                        old_weight = float(correct_item.get("weight", 1.0) or 1.0)
+                        new_weight = max(old_weight, 1.5)
+                        if new_weight > old_weight:
+                            correct_item["weight"] = new_weight
+                            updated_existing = True
+                if not updated_existing:
+                    return False
+
+                os.makedirs(os.path.dirname(self.homophones_file), exist_ok=True)
+                with open(self.homophones_file, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, ensure_ascii=False, indent=2)
+
+                self.homophones = self._load_homophone_dictionary(self.homophones_file)
+                self._build_reading_index()
+                return True
 
             updated = False
 
@@ -1756,10 +1952,20 @@ class PipelineCorrector:
             self._morph_analyzer = JapaneseMorphAnalyzer(dicdir=self.mecab_dicdir)
             if self._morph_analyzer.available:
                 self._mecab_tagger = self._morph_analyzer.tagger
+                if MeCab is not None:
+                    try:
+                        if self.mecab_dicdir:
+                            self._mecab_yomi_tagger = MeCab.Tagger(f"-d {self.mecab_dicdir} -Oyomi")
+                        else:
+                            self._mecab_yomi_tagger = MeCab.Tagger("-Oyomi")
+                        self._mecab_yomi_tagger.parse("")
+                    except Exception:
+                        self._mecab_yomi_tagger = None
                 print("  [POS] MeCab helper enabled")
                 return
         except Exception as e:
             self._morph_analyzer = None
+            self._mecab_yomi_tagger = None
             print(f"  [POS] MeCab helper unavailable, try direct tagger: {e}")
 
         if MeCab is None:
@@ -1768,9 +1974,18 @@ class PipelineCorrector:
             self._mecab_tagger = MeCab.Tagger()
             # Warm up parser to avoid occasional first-call issues.
             self._mecab_tagger.parse("")
+            try:
+                if self.mecab_dicdir:
+                    self._mecab_yomi_tagger = MeCab.Tagger(f"-d {self.mecab_dicdir} -Oyomi")
+                else:
+                    self._mecab_yomi_tagger = MeCab.Tagger("-Oyomi")
+                self._mecab_yomi_tagger.parse("")
+            except Exception:
+                self._mecab_yomi_tagger = None
             print("  [POS] MeCab direct tagger enabled")
         except Exception as e:
             self._mecab_tagger = None
+            self._mecab_yomi_tagger = None
             print(f"  [POS] MeCab unavailable, fallback to current logic: {e}")
 
     def _analyze_morphemes(self, text):
@@ -1867,6 +2082,24 @@ class PipelineCorrector:
                 surface = self._clean_reading_text(token.get("surface", ""))
                 readings.append(surface or token.get("surface", ""))
         value = "".join(readings)
+        cleaned = self._clean_reading_text(value)
+
+        # Some dictionaries return non-phonetic or partial readings for rare tokens.
+        # Use -Oyomi as a fallback for kanji-heavy fragments.
+        has_kanji = bool(re.search(r"[\u4e00-\u9fff々ヶ]", key))
+        looks_partial = has_kanji and len(cleaned) < max(2, int(len(key) * 0.6))
+        if (not cleaned or looks_partial) and self._mecab_yomi_tagger:
+            try:
+                yomi_raw = (self._mecab_yomi_tagger.parse(key) or "").strip()
+                if yomi_raw:
+                    yomi_line = yomi_raw.splitlines()[0].strip()
+                    yomi_clean = self._clean_reading_text(yomi_line)
+                    if yomi_clean:
+                        cleaned = yomi_clean
+            except Exception:
+                pass
+
+        value = cleaned or value
         self._reading_cache[key] = value
         return value
 
@@ -2695,7 +2928,7 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
 
 
     def _maybe_auto_learn_from_no_dict(self, sentence, old_fragment, new_fragment):
-        """Online learning from accepted no-dict LLM corrections (general, non-hardcoded)."""
+        """Queue no-dict corrections for later label-based verification."""
         if not self.no_dict_auto_learn_from_llm:
             return
         if not old_fragment or not new_fragment or old_fragment == new_fragment:
@@ -2714,22 +2947,17 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
         if similarity < self.no_dict_auto_learn_min_similarity:
             return
 
-        self._remember_verified_mapping(old_fragment, new_fragment)
-        hits = self._verified_mapping_hits.get((old_fragment, new_fragment), 0)
-        if hits < self.no_dict_auto_learn_min_hits:
-            return
-
-        added = self._add_learned_homophone_entry(
-            old_fragment,
-            new_fragment,
-            context_hint=sentence,
-            source=self.no_dict_auto_learn_source,
-            freq=hits,
-        )
-        if added:
-            self.no_dict_auto_learned += 1
-            self._build_reading_index()
-            print(f"  [NO-DICT-AUTO-LEARN] {old_fragment} -> {new_fragment} (hits={hits})")
+        key = (old_fragment, new_fragment)
+        item = self._pending_no_dict_pairs.get(key, {
+            "hits": 0,
+            "last_sentence": "",
+            "max_similarity": 0.0,
+        })
+        item["hits"] = int(item.get("hits", 0)) + 1
+        item["last_sentence"] = sentence
+        item["max_similarity"] = max(float(item.get("max_similarity", 0.0) or 0.0), float(similarity))
+        self._pending_no_dict_pairs[key] = item
+        print(f"  [NO-DICT-PENDING] {old_fragment} -> {new_fragment} (hits={item['hits']})")
 
     def _pick_aggressive_no_dict_candidate(self, sentence, target_hint):
         """Pick a fallback replacement from reading-group candidates when KEEP is disabled."""
@@ -2867,42 +3095,94 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                 self.no_dict_llm_rejected += 1
                 return sentence
 
+        if self._is_blacklisted_mapping(source, right):
+            self.no_dict_llm_rejected += 1
+            return sentence
+
         self._last_no_dict_mode = "llm"
         return sentence.replace(source, right, 1)
 
-    def learn_from_feedback(self, original_sentence, corrected_sentence, expected_sentence):
-        """Learn new mapping when an LLM-driven correction is proven correct."""
+    def learn_from_feedback(self, original_sentence, corrected_sentence, expected_sentence, applied_changes=None):
+        """Strict learning: only verified no-dict pairs are persisted; wrong pairs are blacklisted."""
         if not self.auto_learn_dictionary:
             return False
-        if not expected_sentence or corrected_sentence != expected_sentence:
+        if not expected_sentence:
             return False
-        if corrected_sentence == original_sentence:
-            return False
-        if not self._last_used_llm:
+        if not self._last_no_dict_pairs:
             return False
 
-        wrong_word, correct_word = self._extract_expanded_word_change(original_sentence, corrected_sentence)
-        if not wrong_word or not correct_word:
-            return False
-        if len(wrong_word) < self.auto_learn_min_len or len(correct_word) < self.auto_learn_min_len:
-            return False
-        if not self._is_reading_compatible(wrong_word, correct_word):
+        pair_candidates = []
+        for wrong_word, correct_word in self._last_no_dict_pairs or []:
+            wrong = (wrong_word or "").strip()
+            correct = (correct_word or "").strip()
+            if wrong and correct and wrong != correct:
+                pair_candidates.append((wrong, correct))
+
+        if not pair_candidates:
             return False
 
-        self._remember_verified_mapping(wrong_word, correct_word)
+        learned_any = False
+        seen = set()
+        for wrong_word, correct_word in pair_candidates:
+            key = (wrong_word, correct_word)
+            if key in seen:
+                continue
+            seen.add(key)
 
-        added = self._add_learned_homophone_entry(
-            wrong_word,
-            correct_word,
-            context_hint=expected_sentence,
-            source="llm_verified",
-            freq=self._verified_mapping_hits.get((wrong_word, correct_word), 1),
-        )
-        if added:
+            is_verified = (
+                corrected_sentence == expected_sentence
+                and correct_word in expected_sentence
+                and wrong_word not in expected_sentence
+            )
+
+            if not is_verified:
+                if self.blacklist_on_incorrect_feedback:
+                    self._append_runtime_blacklist(
+                        wrong_word,
+                        correct_word,
+                        reason="no_dict_feedback_incorrect",
+                        context_original=original_sentence,
+                        context_corrected=corrected_sentence,
+                        context_expected=expected_sentence,
+                    )
+                    self._drop_runtime_mapping(wrong_word, correct_word)
+                    print(f"  [NO-DICT-BLACKLIST] {wrong_word} -> {correct_word}")
+                else:
+                    print(f"  [NO-DICT-SKIP] {wrong_word} -> {correct_word} (incorrect feedback, not blacklisted)")
+                self._pending_no_dict_pairs.pop(key, None)
+                continue
+
+            if len(wrong_word) < self.auto_learn_min_len or len(correct_word) < self.auto_learn_min_len:
+                self._pending_no_dict_pairs.pop(key, None)
+                continue
+            if not self._is_reading_compatible(wrong_word, correct_word):
+                self._pending_no_dict_pairs.pop(key, None)
+                continue
+            if self._is_blacklisted_mapping(wrong_word, correct_word):
+                self._pending_no_dict_pairs.pop(key, None)
+                continue
+
+            pending = self._pending_no_dict_pairs.get(key, {})
+            hits = max(1, int(pending.get("hits", 1) or 1))
+            self._remember_verified_mapping(wrong_word, correct_word)
+            self.no_dict_pair_verified_accept += 1
+
+            added = self._add_learned_homophone_entry(
+                wrong_word,
+                correct_word,
+                context_hint=expected_sentence,
+                source="no_dict_verified",
+                freq=hits,
+            )
+            self._pending_no_dict_pairs.pop(key, None)
+            if added:
+                learned_any = True
+                self.no_dict_auto_learned += 1
+                print(f"  [NO-DICT-LEARNED] {wrong_word} -> {correct_word} (hits={hits})")
+
+        if learned_any:
             self._persist_verified_runtime_state()
-        if added:
-            print(f"  [AUTO-LEARN][HOMO] {wrong_word} -> {correct_word}")
-        return added
+        return learned_any
 
     def _call_llm_with_retry(self, prompt, max_tokens=20, client=None, model=None, system_message=None):
         """Call LLM with retry/backoff for transient API failures."""
@@ -3175,6 +3455,8 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
     def correct_sentence(self, sentence):
         self.total_checked += 1
         self._last_used_llm = False
+        self._last_llm_pairs = []
+        self._last_no_dict_pairs = []
 
         def _finalize_output(text, change_list):
             final_text, post_changes = self.postprocess_spoken_style(text)
@@ -3197,6 +3479,17 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
         corrected = sentence
         dict_applied_in_sentence = False
         llm_applied_in_sentence = False
+
+        reverse_runtime_pairs = set()
+        for item in pre_changes:
+            if "→" not in item:
+                continue
+            left, right = item.split("→", 1)
+            old = (left or "").strip()
+            new = (right or "").strip()
+            if old and new and old != new:
+                # Block replacing corrected token back to original wrong token.
+                reverse_runtime_pairs.add((new, old))
 
         homophone_matches = [] if self.disable_dictionary_stage else self.lookup_dictionary(corrected)
         homophone_matches_sorted = sorted(homophone_matches, key=lambda x: x["position"], reverse=True)
@@ -3239,10 +3532,16 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                 candidate = self._sanitize_dictionary_token(candidate)
                 if not candidate or candidate == word:
                     return False
+                if self._is_blacklisted_mapping(word, candidate):
+                    self._log_pos_prune(corrected, word, candidate, "blacklist_block")
+                    return False
                 norm_word = re.sub(r"[\s、。,.!?！？；;:：]+$", "", word or "")
                 norm_candidate = re.sub(r"[\s、。,.!?！？；;:：]+$", "", candidate or "")
                 if norm_word and norm_candidate and norm_word == norm_candidate:
                     self._log_pos_prune(corrected, word, candidate, "punctuation_only_block")
+                    return False
+                if (word, candidate) in reverse_runtime_pairs:
+                    self._log_pos_prune(corrected, word, candidate, "runtime_reverse_block")
                     return False
                 # Avoid injecting latin token into Japanese span unless source already has latin chars.
                 if re.search(r"[A-Za-z]", candidate) and not re.search(r"[A-Za-z]", word):
@@ -3300,6 +3599,7 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                 else:
                     llm_applied_in_sentence = True
                     self._last_used_llm = True
+                    self._last_llm_pairs.append((word, chosen))
                     print(f"  [LLM-ALT] {word} → {chosen}")
                 continue
 
@@ -3328,6 +3628,7 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                 changes.append(f"{word}→{llm_choice}")
                 llm_applied_in_sentence = True
                 self._last_used_llm = True
+                self._last_llm_pairs.append((word, llm_choice))
                 print(f"  [LLM]  {word} → {llm_choice}")
 
         # If unresolved after dictionary + AI recheck, route to no-dict LLM only
@@ -3369,6 +3670,8 @@ ACTION: REPLACE | WRONG: 誤り語 | RIGHT: 正しい語
                     self.llm_corrected += 1
                     self.no_dict_llm_changed += 1
                     self._last_used_llm = True
+                    self._last_llm_pairs.append((old_fragment, new_fragment))
+                    self._last_no_dict_pairs.append((old_fragment, new_fragment))
                     self._maybe_auto_learn_from_no_dict(no_dict_input, old_fragment, new_fragment)
                     print(f"  [NO-DICT] {old_fragment} → {new_fragment}")
                     return _finalize_output(llm_corrected_sentence, changes + [f"{old_fragment}→{new_fragment}"])
