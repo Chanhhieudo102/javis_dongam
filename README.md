@@ -1,8 +1,8 @@
-# Japanese Homophone ASR Correction (Standalone)
+# Japanese Homophone ASR Correction
 
-This package is a minimal standalone subset to run Japanese homophone ASR correction with Qwen3-32B.
+Standalone Japanese homophone correction pipeline using MeCab + Groq LLM (`qwen/qwen3-32b`).
 
-## 1) Setup
+## Setup
 
 ```powershell
 python -m venv .venv
@@ -10,51 +10,48 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## 2) Configure API key
+## Configure
 
-Edit:
+Main config file:
 
 - `config/test/Japanese/japanese_config_homophones_dialog_call.yaml`
 
-Set:
+Required fields:
 
-- `api_key: YOUR_GROQ_API_KEY`
+- `api_key`: your Groq API key
+- `model`: `qwen/qwen3-32b`
+- `path.test_data` and `path.label`: input/label files
 
-to your real Groq API key.
-
-## 3) Run
+## Run
 
 ```powershell
 python .\run_japanese_homophones.py
 ```
 
-## 4) Main workflow
+## Pipeline Summary
 
-1. Read ASR input sentence by sentence from `data/japanese/test/test.txt`
-2. Tokenize + POS + reading extraction via MeCab
-3. Detect suspicious homophone positions from `data/japanese/dictionary/homophones.json`
-4. Generate candidates and filter by POS compatibility
-5. Score candidates by context/collocation/reading/metadata (and optional embedding signal)
-6. Apply rule-based best candidate if confidence/guards pass
-7. LLM recheck on uncertain dictionary decisions
-8. No-dict fallback LLM for unresolved cases
-9. Auto-learn accepted no-dict replacements into runtime/dictionary signals
-10. Output corrected text + WER/CER + pipeline stats
+1. Load dictionary and pipeline metadata from `data/japanese/dictionary/homophones.json`.
+2. Apply seed replacements from dictionary metadata.
+3. Apply verified runtime map replacements.
+4. Run dictionary scoring and rule-based candidate replacement.
+5. Run LLM recheck for uncertain dictionary decisions.
+6. Route unresolved suspicious sentences to no-dict LLM branch.
+7. Validate no-dict suggestions with guard checks.
+8. Save output text, CER/WER, and detailed `pipeline_stats.json`.
 
-## 5) Files included
+## Outputs
 
-- `run_japanese_homophones.py` (entrypoint)
-- `pipeline_correction.py` (core correction pipeline)
-- `tools/compute-wer.py` (WER)
-- `tools/compute-cer.py` (CER)
-- `tools/japanese_mecab_helper.py` (MeCab wrapper)
-- `config/test/Japanese/japanese_config_homophones_dialog_call.yaml` (runtime config)
-- `data/japanese/test/test.txt` (input)
-- `data/japanese/label/label.txt` (labels)
-- `data/japanese/dictionary/homophones.json` (homophone dictionary)
+- Run artifacts are generated under `result/pipeline_YYYY-MM-DD_HH-MM-SS/test_data/`.
+- Key files include `text`, `wer`, `err`, `runtime.log`, and `pipeline_stats.json`.
 
-## 6) Notes
+## Repository Notes
 
-- Output is written under `result/`.
-- If MeCab dictionary setup fails, install `unidic-lite` and retry.
-- This package is intentionally minimal; unrelated scripts and old snapshots are excluded.
+- `result/` is local runtime output and is excluded from version control.
+- `__pycache__/` and `*.pyc` files are excluded from version control.
+
+## Core Files
+
+- `pipeline_correction.py`: correction logic and branch routing
+- `run_japanese_homophones.py`: runner and metrics export
+- `tools/japanese_mecab_helper.py`: MeCab tokenization helpers
+- `tools/compute-wer.py` and `tools/compute-cer.py`: evaluation utilities

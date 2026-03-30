@@ -1,5 +1,5 @@
-pyyaml
-openai
-groq
-mecab-python3
-unidic-lite
+PyYAML>=6.0
+openai>=1.0.0
+groq>=0.11.0
+mecab-python3>=1.0.6
+unidic-lite>=1.0.8

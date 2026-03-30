@@ -1,115 +1,72 @@
-# Japanese Homophone Error Correction - Streamlined Configuration
+# Japanese Homophone Error Correction - PIPELINE MODE
 path:
   test_data: D:\VJ\LLM-ASR-Error-Correction\data\japanese\test\test.txt
   label: D:\VJ\LLM-ASR-Error-Correction\data\japanese\label\label.txt
 
+# LLM backend
 model: qwen/qwen3-32b
 api_key: ""
 base_url: https://api.groq.com/openai/v1
 use_groq_sdk: true
-temperature: 0.15
-top_p: 0.55
-max_completion_tokens: 400
-reasoning_effort: low
+temperature: 0.0
+top_p: 0.4
+max_completion_tokens: 220
 max_api_retries: 3
 initial_backoff: 2.0
 backoff_multiplier: 2.0
 max_backoff: 60.0
 disable_llm_on_rate_limit: true
 
-# Core Pipeline Configuration
+# Dictionary source
 homophones_file: data/japanese/dictionary/homophones.json
+
+# Pipeline switches (Rule-based + AI recheck + no-dict fallback)
+zero_shot_translation_mode: false
+disable_dictionary_stage: false
 enable_pos_filter: true
-pos_filter_rules:
-  allow: [名詞, 動詞, 形容詞, 形状詞, 感動詞, 副詞]
-  deny: [助詞, 助動詞, 記号]
-
-# Dictionary Matching
-dict_confidence_threshold: 4
-llm_recheck_dict: true
-enable_llm_select: true
-llm_recheck_min_score: 3
-dict_recheck_margin: 2
-enable_embedding_score_in_dict: false
-enable_embedding_recheck: false
-embedding_score_weight: 2.5
-llm_skip_tokens: [はい, あ, あの, えっと, うーん, えー]
-skip_filler_in_dict_stage: true
-protected_compounds:
-  - 了解
-
-# Homophone Detection (Optimized for LLM Freedom)
 enable_no_dict_detector: true
-no_dict_route_unresolved: true
-no_dict_delegate_to_llm: true
 
-disable_keep_choice: true
-force_change_on_llm_uncertain: true
+# Candidate scoring weights / thresholds
+keyword_score_weight: 0.9
+reading_similarity_weight: 1.2
+metadata_weight: 0.7
+rule_score_threshold: 2.6
+rule_score_margin: 0.35
+rule_min_reading_similarity: 0.45
+recheck_max_candidates: 3
+recheck_min_score_to_call: 2.15
 
-# Tắt toàn bộ màng lọc đếm chữ và đếm phát âm
-no_dict_require_reading_match: false
-no_dict_min_reading_similarity: 0.0
-no_dict_adaptive_similarity_floor: 0.0
-no_dict_require_explicit_homophone: false
-no_dict_enable_pos_guard: false
-no_dict_enable_span_guard: false
-no_dict_avoid_short_words: false
-prioritize_pos_anomaly: false
+forbidden_replacements:
+  - 以降->意蘊
+  - 以降->移行
+  - 以降->意向
+  - 間違い->街外
+  - 看板->勘弁
+  - 外人->害人
 
-# Nới lỏng tối đa các giới hạn chiều dài
-no_dict_max_span_len: 20
-no_dict_max_len_delta: 10
-no_dict_sentence_min_similarity: 0.0
-no_dict_sentence_max_edit_chars: 50
+# AI recheck branch
+llm_recheck_system_prompt: |
+  あなたはASR同音異義語修正の判定器です。
+  入力で与えられた候補から、KEEPまたは候補語1つだけを返してください。
+  説明文は禁止です。
 
-# Auto-learning Configuration
+# No-dict branch
+no_dict_prompt: |
+  あなたはASRの同音異義語修正アシスタントです。
+  同音異義語・近音語の誤りのみを最小編集で修正してください。
+  言い換え・要約・説明は禁止です。
+  出力は「<改>[修正文]」の1行のみ。
+no_dict_min_reading_similarity: 0.62
+no_dict_sentence_max_edit_chars: 8
+no_dict_max_completion_tokens: 220
+no_dict_temperature: 0.0
+no_dict_top_p: 0.3
+no_dict_token_boundary_check: true
+
+# Auto-learn and runtime memory
 auto_learn_dictionary: true
-auto_learn_min_len: 2
-auto_learn_context_size: 4
-no_dict_auto_learn_from_llm: true
-no_dict_auto_learn_min_hits: 1
-no_dict_auto_learn_min_similarity: 0.75
 auto_learn_apply_on_verified_hits: true
-
-# Runtime Map Verification
 use_verified_runtime_map: true
-verified_runtime_min_hits: 1
 verified_runtime_path: result/runtime_verified_map_homophone.json
 runtime_map_blacklist_path: result/runtime_blacklist_homophone.jsonl
 
-# Collocation & Context Scoring
-enable_collocation_score: true
-collocation_weight: 7.0
-collocation_window_size: 5
-scoring_context_window: 8
-collocation_corpus_paths:
-  - data/japanese/label/label.txt
-  - data/japanese/test/test.txt
-
-
-
-# LLM Fallback Prompt (when dictionary doesn't match)
-no_dict_prompt: |
-  あなたはASR（音声認識）の同音異義語・近音語の誤り修正を行う専門AIです。
-  文脈から明らかに不自然な同音・近音の誤りを検知し、適切な漢字や単語に修正してください。
-
-  【修正のガイドライン】
-  1) 同音・近音によるASR誤りのみを修正対象とします（言い換え・要約・語順変更は厳禁）。
-  2) 前後の文脈や連語関係を見て、より自然な語彙があれば「積極的に」修正してください。
-  3) 複数の単語にまたがる誤り（例: 「勝ってきます」→「かかってきます」）も、文脈が自然になるなら修正可能です。
-  4) 同音・近音の候補がある場合は必ず置換を選びます（KEEPは使用しません）。
-  5) 助詞や形式名詞（こと、もの、ところ、ください、いたします）の過剰な漢字化は避けてください。
-  6) 出力は必ず <改>[...] の1行のみです。
-
-  【出力例】
-  入力: お手元には解いていないという状態でしょうか。
-  出力: <改>[お手元には届いていないという状態でしょうか。]
-
-  入力: 昨日の夜宜しですね。
-  出力: <改>[昨日の夜よろしいですね。]
-
-  入力: 絶好の機械を逃す。
-  出力: <改>[絶好の機会を逃す。]
-
-  入力: 島田様ですね。
-  出力: <改>[島田様ですね。]
