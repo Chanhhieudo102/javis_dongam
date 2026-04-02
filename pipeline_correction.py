@@ -5,6 +5,7 @@ import json
 import math
 import os
 import re
+import threading
 import time
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
@@ -28,9 +29,6 @@ except Exception:
     JapaneseMorphAnalyzer = None
 
 
-# ============================================================================
-# MODULE 1: JAPANESE NLP (Tokenization, POS Tagging, Reading Similarity)
-# ============================================================================
 class JapaneseNLP:
     """Handle MeCab tokenization/POS and reading similarity."""
 
@@ -201,16 +199,24 @@ class JapaneseNLP:
         return has_start and has_end
 
 
-# ============================================================================
-# MODULE 2: LLM ENGINE (Retry, Parsing, Recheck Decision)
-# ============================================================================
 class ASRLLMEngine:
+    _throttle_lock = threading.Lock()
+    _next_allowed_by_key: Dict[str, float] = {}
+    _semaphore_lock = threading.Lock()
+    _semaphore_pool: Dict[str, threading.Semaphore] = {}
+
     def __init__(self, config: dict):
         self.config = config
         self.api_key = config.get("api_key", "")
         self.base_url = config.get("base_url", "")
         self.model = config.get("model", "")
+        self.request_timeout = float(config.get("request_timeout", 120))
         self.max_retries = int(config.get("max_api_retries", 3))
+        self.min_request_interval_sec = max(0.0, float(config.get("min_request_interval_sec", 0.0) or 0.0))
+        self.max_concurrent_requests = max(1, int(config.get("max_concurrent_requests", 1) or 1))
+        self.safe_max_tokens_cap = max(0, int(config.get("safe_max_tokens_cap", 0) or 0))
+        self._throttle_key = f"{self.base_url}|{self.model}"
+        self._request_semaphore = self._get_or_create_semaphore()
         self.client = self._init_client()
         self.unavailable = False
 
@@ -219,7 +225,45 @@ class ASRLLMEngine:
     def _init_client(self):
         if self.config.get("use_groq_sdk", True) and Groq and "api.groq.com" in self.base_url:
             return Groq(api_key=self.api_key)
-        return OpenAI(api_key=self.api_key, base_url=self.base_url, max_retries=0)
+        return OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            max_retries=0,
+            timeout=self.request_timeout,
+        )
+
+    def _get_or_create_semaphore(self) -> threading.Semaphore:
+        key = f"{self.base_url}|{self.max_concurrent_requests}"
+        with self.__class__._semaphore_lock:
+            sem = self.__class__._semaphore_pool.get(key)
+            if sem is None:
+                sem = threading.Semaphore(self.max_concurrent_requests)
+                self.__class__._semaphore_pool[key] = sem
+            return sem
+
+    def _cap_tokens(self, max_tokens: int) -> int:
+        capped = max(1, int(max_tokens))
+        if self.safe_max_tokens_cap > 0:
+            capped = min(capped, self.safe_max_tokens_cap)
+        return capped
+
+    def _acquire_request_slot(self) -> None:
+        self._request_semaphore.acquire()
+        if self.min_request_interval_sec <= 0.0:
+            return
+
+        while True:
+            with self.__class__._throttle_lock:
+                now = time.monotonic()
+                next_allowed = self.__class__._next_allowed_by_key.get(self._throttle_key, 0.0)
+                wait_sec = next_allowed - now
+                if wait_sec <= 0.0:
+                    self.__class__._next_allowed_by_key[self._throttle_key] = now + self.min_request_interval_sec
+                    return
+            time.sleep(min(wait_sec, 0.2))
+
+    def _release_request_slot(self) -> None:
+        self._request_semaphore.release()
 
     @staticmethod
     def _strip_reasoning(raw_text: str) -> str:
@@ -258,9 +302,13 @@ class ASRLLMEngine:
 
         tmp = self.config.get("temperature", 0.0) if temperature is None else temperature
         tp = self.config.get("top_p", 0.4) if top_p is None else top_p
+        req_tokens = self._cap_tokens(max_tokens)
 
         for attempt in range(self.max_retries + 1):
+            acquired_slot = False
             try:
+                self._acquire_request_slot()
+                acquired_slot = True
                 messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
@@ -272,9 +320,9 @@ class ASRLLMEngine:
                     "top_p": tp,
                 }
                 if isinstance(self.client, Groq):
-                    kwargs["max_completion_tokens"] = max_tokens
+                    kwargs["max_completion_tokens"] = req_tokens
                 else:
-                    kwargs["max_tokens"] = max_tokens
+                    kwargs["max_tokens"] = req_tokens
 
                 response = self.client.chat.completions.create(**kwargs)
                 return (response.choices[0].message.content or "").strip()
@@ -290,6 +338,73 @@ class ASRLLMEngine:
                     time.sleep(sleep_t)
                 else:
                     print(f"  [LLM-ERROR] {e}")
+            finally:
+                if acquired_slot:
+                    self._release_request_slot()
+        return ""
+
+    def generate_completion(
+        self,
+        prompt: str,
+        max_tokens: int,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+    ) -> str:
+        if self.unavailable:
+            return ""
+
+        tmp = self.config.get("temperature", 0.0) if temperature is None else temperature
+        tp = self.config.get("top_p", 0.4) if top_p is None else top_p
+        req_tokens = self._cap_tokens(max_tokens)
+
+        for attempt in range(self.max_retries + 1):
+            acquired_slot = False
+            try:
+                self._acquire_request_slot()
+                acquired_slot = True
+                # Mirror standalone eval script behavior: prompt template + completions API.
+                if isinstance(self.client, Groq):
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        max_completion_tokens=req_tokens,
+                        temperature=tmp,
+                        top_p=tp,
+                    )
+                    text = (response.choices[0].message.content or "").strip()
+                    return text
+
+                response = self.client.completions.create(
+                    model=self.model,
+                    prompt=prompt,
+                    stream=False,
+                    max_tokens=req_tokens,
+                    temperature=tmp,
+                    top_p=tp,
+                    timeout=self.request_timeout,
+                )
+                if not response or not getattr(response, "choices", None):
+                    return ""
+                choice0 = response.choices[0]
+                text = getattr(choice0, "text", None)
+                if text is None and getattr(choice0, "message", None) is not None:
+                    text = getattr(choice0.message, "content", "")
+                return (text or "").strip()
+            except Exception as e:
+                err = str(e).lower()
+                if ("rate limit" in err or "429" in err) and self.config.get("disable_llm_on_rate_limit", True):
+                    print("  [LLM] Rate limited. Disable further calls in this run.")
+                    self.unavailable = True
+                    return ""
+                if attempt < self.max_retries:
+                    sleep_t = min(float(self.config.get("max_backoff", 60.0)), float(self.config.get("initial_backoff", 2.0)) * (2 ** attempt))
+                    print(f"  [LLM-RETRY] {type(e).__name__}: retry in {sleep_t:.1f}s")
+                    time.sleep(sleep_t)
+                else:
+                    print(f"  [LLM-ERROR] {e}")
+            finally:
+                if acquired_slot:
+                    self._release_request_slot()
         return ""
 
     def parse_choice(self, raw_output: str, candidates: List[str]) -> str:
@@ -373,9 +488,6 @@ class ASRLLMEngine:
         return True
 
 
-# ============================================================================
-# MODULE 3: CORE PIPELINE
-# ============================================================================
 class PipelineCorrector:
     """Pipeline: Tokenize/POS -> Dict scan -> POS filter -> scoring -> Rule or AI recheck -> No-dict fallback."""
 
@@ -390,13 +502,22 @@ class PipelineCorrector:
         self.llm = ASRLLMEngine(self.config)
 
         # Main switches
+        self.llm_no_dict_only_mode = bool(self.config.get("llm_no_dict_only_mode", False))
         self.zero_shot_translation_mode = bool(self.config.get("zero_shot_translation_mode", False))
         self.disable_dictionary_stage = bool(self.config.get("disable_dictionary_stage", False))
         self.enable_no_dict_detector = bool(self.config.get("enable_no_dict_detector", True))
         # Keep pipeline generic: do not depend on corpus-derived collocation priors.
         self.enable_collocation_score = False
         self.auto_learn_dictionary = bool(self.config.get("auto_learn_dictionary", True))
+        self.disable_seed_replacements = bool(self.config.get("disable_seed_replacements", False))
         self.no_dict_run_on_residual_suspicious = bool(self.config.get("no_dict_run_on_residual_suspicious", True))
+
+        if self.llm_no_dict_only_mode:
+            self.zero_shot_translation_mode = True
+            self.disable_dictionary_stage = True
+            self.enable_no_dict_detector = True
+            self.auto_learn_dictionary = False
+            self.disable_seed_replacements = True
 
         # Scoring weights / thresholds
         self.rule_score_threshold = float(self.config.get("rule_score_threshold", 2.6))
@@ -421,11 +542,18 @@ class PipelineCorrector:
         self.post_normalization_regex_rules = []
 
         # Dictionary and caches
-        self.homophones_file = self.config.get("homophones_file", "data/japanese/dictionary/homophones.json")
-        self.homophone_groups = self._load_homophone_groups(self.homophones_file)
-        self.homophones = self._build_surface_homophone_map(self.homophone_groups)
-        self.no_dict_signal_terms, self.no_dict_signal_patterns = self._load_no_dict_signals(self.homophone_groups)
-        self.seed_replacements = self._load_seed_replacements(self.homophone_groups)
+        if self.llm_no_dict_only_mode:
+            self.homophones_file = ""
+            self.homophone_groups = {}
+            self.homophones = {}
+            self.no_dict_signal_terms, self.no_dict_signal_patterns = [], []
+            self.seed_replacements = {}
+        else:
+            self.homophones_file = self.config.get("homophones_file", "data/japanese/dictionary/homophones.json")
+            self.homophone_groups = self._load_homophone_groups(self.homophones_file)
+            self.homophones = self._build_surface_homophone_map(self.homophone_groups)
+            self.no_dict_signal_terms, self.no_dict_signal_patterns = self._load_no_dict_signals(self.homophone_groups)
+            self.seed_replacements = self._load_seed_replacements(self.homophone_groups)
 
         self.zero_shot_cache: Dict[str, str] = {}
         self.verified_runtime_map: Dict[str, str] = {}
@@ -463,8 +591,11 @@ class PipelineCorrector:
         self.llm_recheck_kept = 0
         self.llm_recheck_changed = 0
 
-        self._load_caches()
-        print(f"Loaded {len(self.homophone_groups)} reading groups from {self.homophones_file}")
+        if not self.llm_no_dict_only_mode:
+            self._load_caches()
+            print(f"Loaded {len(self.homophone_groups)} reading groups from {self.homophones_file}")
+        else:
+            print("LLM no-dict-only mode: dictionary/caches disabled")
 
     # ------------------------------------------------------------------
     # Load / Save helpers
@@ -661,9 +792,6 @@ class PipelineCorrector:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    # ------------------------------------------------------------------
-    # Collocation / Embedding-like scoring
-    # ------------------------------------------------------------------
     @staticmethod
     def _extract_line_text(line: str) -> str:
         line = (line or "").strip()
@@ -731,9 +859,6 @@ class PipelineCorrector:
         v_ctx = self._char_ngram_vector(context_text, n=2)
         return self._cosine_similarity(v_cand, v_ctx)
 
-    # ------------------------------------------------------------------
-    # Candidate discovery and scoring
-    # ------------------------------------------------------------------
     @staticmethod
     def _frequency_to_weight(freq_value) -> float:
         if freq_value is None:
@@ -868,10 +993,9 @@ class PipelineCorrector:
             return True
         return False
 
-    # ------------------------------------------------------------------
-    # Branches
-    # ------------------------------------------------------------------
     def _apply_seed_replacements(self, sentence: str) -> Tuple[str, List[str]]:
+        if self.disable_seed_replacements:
+            return sentence, []
         if not self.seed_replacements:
             return sentence, []
 
@@ -1164,27 +1288,13 @@ class PipelineCorrector:
         self.no_dict_routed += 1
         self.no_dict_llm_calls += 1
 
-        base_sys_prompt = self.config.get("no_dict_prompt", self._default_no_dict_prompt())
-        sys_prompt = (
-            f"{base_sys_prompt}\n\n"
-            "厳守ルール:\n"
-            "- 出力は次のどちらかのみ: NOCHANGE または WRONG=<誤り語> と RIGHT=<修正語>\n"
-            "- 解説・推論・英語文・前置きは禁止\n"
-            "- 複数箇所修正は禁止（最大1箇所）"
-        )
-        prompt = (
-            "次のASR文に対して、同音異義語・近音語の誤りを最大1箇所だけ抽出してください。\n"
-            "誤りが無ければ NOCHANGE とだけ返してください。\n"
-            "返答形式:\n"
-            "WRONG=<誤り語>\n"
-            "RIGHT=<修正語>\n\n"
-            "例1:\n"
-            "WRONG=意向\nRIGHT=以降\n\n"
-            "例2:\n"
-            "NOCHANGE\n\n"
-            f"入力文: {sentence}\n"
-            "出力:"
-        )
+        prompt_template = str(self.config.get("no_dict_prompt", self._default_no_dict_prompt()) or "")
+        try:
+            prompt = prompt_template.format(input_sentence=sentence)
+        except Exception:
+            prompt = prompt_template.replace("{input_sentence}", sentence)
+        if "{input_sentence}" not in prompt_template and sentence not in prompt:
+            prompt = f"{prompt.rstrip()}\n\nInput: {sentence}\n"
 
         no_dict_max_tokens = int(self.config.get("no_dict_max_completion_tokens", 220))
         model_name = str(getattr(self.llm, "model", "") or "").lower()
@@ -1195,90 +1305,28 @@ class PipelineCorrector:
                 int(self.config.get("no_dict_reasoning_max_completion_tokens", 800)),
             )
 
-        raw = self.llm.generate(
+        raw = self.llm.generate_completion(
             prompt,
-            sys_prompt,
             max_tokens=no_dict_max_tokens,
             temperature=float(self.config.get("no_dict_temperature", 0.0)),
             top_p=float(self.config.get("no_dict_top_p", 0.3)),
         )
-        old_frag = ""
-        new_frag = ""
-
-        cleaned = self.llm._strip_reasoning(raw)
-        if re.search(r"\b(?:NOCHANGE|KEEP)\b", cleaned, flags=re.IGNORECASE):
+        corrected = self.llm._strip_reasoning(raw)
+        if corrected == "":
             self.no_dict_llm_kept += 1
             return sentence, [], False
-
-        # If the model ignored format and returned prose, treat as no-change.
-        if not re.search(r"(?:WRONG|RIGHT|OLD|NEW|FROM|TO|<改>|->|→)", cleaned, flags=re.IGNORECASE):
-            self.no_dict_llm_kept += 1
-            return sentence, [], False
-
-        m_old = re.search(r"(?:WRONG|OLD|FROM)\s*[:=]\s*(.+)", cleaned, flags=re.IGNORECASE)
-        m_new = re.search(r"(?:RIGHT|NEW|TO)\s*[:=]\s*(.+)", cleaned, flags=re.IGNORECASE)
-        if m_old and m_new:
-            old_frag = m_old.group(1).strip().strip("[](){}<>\"'")
-            new_frag = m_new.group(1).strip().strip("[](){}<>\"'")
-
-        if not old_frag or not new_frag:
-            # Fallback parser: support outputs like old->new or <改>[sentence]
-            arrow = re.search(r"([^\n\r→]+?)\s*(?:→|->)\s*([^\n\r]+)", cleaned)
-            if arrow:
-                old_frag = arrow.group(1).strip().strip("[](){}<>")
-                new_frag = arrow.group(2).strip().strip("[](){}<>")
-
-        corrected = sentence
-        if old_frag and new_frag:
-            corrected = sentence.replace(old_frag, new_frag, 1)
-        else:
-            corrected = self.llm.parse_correction(raw, sentence)
-            old_frag, new_frag = self.llm.extract_span(sentence, corrected)
 
         if corrected == sentence:
             self.no_dict_llm_kept += 1
             return sentence, [], False
 
+        old_frag, new_frag = self.llm.extract_span(sentence, corrected)
         if not old_frag or not new_frag:
-            self.no_dict_llm_rejected += 1
-            print("  [NO-DICT-REJECT] unable to parse pair")
-            return sentence, [], False
-
-        if old_frag not in sentence:
-            self.no_dict_llm_rejected += 1
-            print(f"  [NO-DICT-REJECT] source token not found: {old_frag}")
-            return sentence, [], False
-
-        if (old_frag, new_frag) in self.forbidden_replacements:
-            self.no_dict_llm_rejected += 1
-            print(f"  [NO-DICT-REJECT] forbidden pair: {old_frag}->{new_frag}")
-            return sentence, [], False
-
-        if abs(len(new_frag) - len(old_frag)) > self.no_dict_sentence_max_edit_chars:
-            self.no_dict_llm_rejected += 1
-            print(f"  [NO-DICT-REJECT] edit delta too large: {old_frag}->{new_frag}")
-            return sentence, [], False
-
-        sim = self.nlp.reading_similarity(old_frag, new_frag)
-        if sim < self.no_dict_min_reading_similarity:
-            if self._same_homophone_group(old_frag, new_frag):
-                sim = 1.0
-            else:
-                self.no_dict_llm_rejected += 1
-                print(f"  [NO-DICT-REJECT] reading sim low: {old_frag}->{new_frag} ({sim:.2f})")
-                return sentence, [], False
-
-        start = sentence.find(old_frag)
-        if start >= 0 and self.config.get("no_dict_token_boundary_check", True):
-            if not self.nlp.is_token_boundary(sentence, start, len(old_frag)):
-                self.no_dict_llm_rejected += 1
-                print(f"  [NO-DICT-REJECT] token boundary check failed: {old_frag}")
-                return sentence, [], False
-
-        if (old_frag, new_frag) in self.runtime_blacklist:
-            self.no_dict_llm_rejected += 1
-            print(f"  [NO-DICT-REJECT] runtime blacklist: {old_frag}->{new_frag}")
-            return sentence, [], False
+            old_frag, new_frag = self.llm.extract_span(sentence, corrected)
+        if not old_frag:
+            old_frag = sentence
+        if not new_frag:
+            new_frag = corrected
 
         self.no_dict_llm_changed += 1
         print(f"  [NO-DICT] {old_frag} -> {new_frag}")

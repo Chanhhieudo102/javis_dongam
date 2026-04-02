@@ -4,27 +4,36 @@ path:
   label: D:\VJ\LLM-ASR-Error-Correction\data\japanese\label\label.txt
 
 # LLM backend
-model: qwen/qwen3-32b
-api_key: ""
-base_url: https://api.groq.com/openai/v1
-use_groq_sdk: true
+model: javis/Qwen3-14B-AWQ
+api_key: "sk-Dna-Jok0OWWkqKr-KkqX4g"
+base_url: https://litellm-ai.prod.vi-jp-te.info/v1
+use_groq_sdk: false
 temperature: 0.0
 top_p: 0.4
-max_completion_tokens: 220
-max_api_retries: 3
+max_completion_tokens: 800
+request_timeout: 90
+max_workers: 1
+max_api_retries: 2
 initial_backoff: 2.0
 backoff_multiplier: 2.0
 max_backoff: 60.0
 disable_llm_on_rate_limit: true
+server_safe_mode: true
+max_samples: 0
+min_request_interval_sec: 0.5
+max_concurrent_requests: 1
+safe_max_tokens_cap: 800
 
 # Dictionary source
 homophones_file: data/japanese/dictionary/homophones.json
 
 # Pipeline switches (Rule-based + AI recheck + no-dict fallback)
+llm_no_dict_only_mode: false
 zero_shot_translation_mode: false
 disable_dictionary_stage: false
 enable_pos_filter: true
 enable_no_dict_detector: true
+disable_seed_replacements: false
 
 # Candidate scoring weights / thresholds
 keyword_score_weight: 0.9
@@ -36,14 +45,6 @@ rule_min_reading_similarity: 0.45
 recheck_max_candidates: 3
 recheck_min_score_to_call: 2.15
 
-forbidden_replacements:
-  - 以降->意蘊
-  - 以降->移行
-  - 以降->意向
-  - 間違い->街外
-  - 看板->勘弁
-  - 外人->害人
-
 # AI recheck branch
 llm_recheck_system_prompt: |
   あなたはASR同音異義語修正の判定器です。
@@ -52,21 +53,54 @@ llm_recheck_system_prompt: |
 
 # No-dict branch
 no_dict_prompt: |
-  あなたはASRの同音異義語修正アシスタントです。
-  同音異義語・近音語の誤りのみを最小編集で修正してください。
-  言い換え・要約・説明は禁止です。
-  出力は「<改>[修正文]」の1行のみ。
+  """<|im_start|>system
+  You are a Japanese ASR post-editing assistant for customer-service and business phone conversations.
+
+  Your task is to correct only clear ASR recognition errors in the input sentence.
+
+  Rules:
+  - Make the minimum necessary edits.
+  - Preserve the original meaning, tone, politeness level, and sentence structure.
+  - Do not rewrite for style.
+  - Do not paraphrase.
+  - Do not summarize.
+  - Do not add missing information that is not strongly implied by the input.
+  - Do not normalize aggressively if the original wording is already acceptable.
+  - Do not change proper nouns, names, numbers, dates, addresses, company names, or technical terms unless the error is obvious.
+  - Prefer leaving the text unchanged over making an uncertain correction.
+  - Correct only errors that are highly confident from phonetic/contextual evidence, such as:
+    - wrong homophone/near-sounding word
+    - incorrect kanji conversion
+    - malformed word caused by ASR
+    - obvious ASR artifact
+  - If a part is ambiguous and not clearly wrong, keep it as is.
+
+  Output format:
+  - Return only the final corrected sentence in one line.
+  - Do not output explanations.
+  - Do not output quotes.
+  - If no correction is clearly needed, return an empty string.
+
+  Input: {input_sentence}
+  <|im_end|>
+  <|im_start|>assistant
+  <think>
+
+  </think>
+  """
+
 no_dict_min_reading_similarity: 0.62
 no_dict_sentence_max_edit_chars: 8
-no_dict_max_completion_tokens: 220
+no_dict_max_completion_tokens: 800
+no_dict_reasoning_max_completion_tokens: 1000
 no_dict_temperature: 0.0
 no_dict_top_p: 0.3
 no_dict_token_boundary_check: true
 
 # Auto-learn and runtime memory
-auto_learn_dictionary: true
-auto_learn_apply_on_verified_hits: true
-use_verified_runtime_map: true
+auto_learn_dictionary: false
+auto_learn_apply_on_verified_hits: false
+use_verified_runtime_map: false
 verified_runtime_path: result/runtime_verified_map_homophone.json
 runtime_map_blacklist_path: result/runtime_blacklist_homophone.jsonl
 

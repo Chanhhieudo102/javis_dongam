@@ -8,6 +8,8 @@ import importlib.util
 import re
 import io
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import redirect_stdout
 
 # Import PIPELINE corrector instead of old chat_agent
@@ -373,6 +375,10 @@ def main():
                 labels[parts[0]] = parts[1]
             else:
                 labels[f"AUTO_{idx:04d}"] = line
+
+    max_samples = max(0, int(config.get("max_samples", 0) or 0))
+    if max_samples > 0:
+        sentences_data = sentences_data[:max_samples]
     
     num_sentences = len(sentences_data)
 
@@ -384,6 +390,9 @@ def main():
         f.write(f"model={config.get('model', '')}\n")
         f.write(f"temperature={config.get('temperature', '')}\n")
         f.write(f"top_p={config.get('top_p', '')}\n")
+        f.write(f"max_workers={config.get('max_workers', '')}\n")
+        f.write(f"server_safe_mode={config.get('server_safe_mode', False)}\n")
+        f.write(f"max_samples={max_samples}\n")
         f.write(f"input={input_file}\n")
         f.write(f"label={label_file}\n")
         f.write(f"sentences={num_sentences}\n\n")
@@ -404,40 +413,143 @@ def main():
     # Process sentences with pipeline
     results = []
     start_time = time.time()
-    
-    for i, item in enumerate(sentences_data, 1):
-        sent_id = item["id"]
-        sentence = item["text"]
+    max_workers = max(1, int(config.get("max_workers", 1) or 1))
+    if bool(config.get("server_safe_mode", False)):
+        max_workers = 1
+    parallel_no_dict_mode = bool(config.get("llm_no_dict_only_mode", False)) and max_workers > 1
 
-        # PIPELINE CORRECTION (verbose logs redirected to runtime log)
-        log_buffer = io.StringIO()
-        with redirect_stdout(log_buffer):
-            corrected_raw, changes = corrector.correct_sentence(sentence)
-        corrected, norm_changes = corrector.postprocess_spoken_style(corrected_raw)
-        if corrected != corrected_raw:
-            if norm_changes:
-                changes = list(changes) + [f"POST[{'; '.join(norm_changes)}]"]
-        expected = labels.get(sent_id, "")
-        if expected:
+    if parallel_no_dict_mode:
+        thread_ctx = threading.local()
+
+        def _process_one(order_idx, item):
+            sent_id = item["id"]
+            sentence = item["text"]
+            expected = labels.get(sent_id, "")
+            log_buffer = io.StringIO()
+
+            local_corrector = getattr(thread_ctx, "corrector", None)
+            if local_corrector is None:
+                init_buf = io.StringIO()
+                with redirect_stdout(init_buf):
+                    local_corrector = PipelineCorrector(config)
+                thread_ctx.corrector = local_corrector
+                init_text = init_buf.getvalue()
+                if init_text.strip():
+                    log_buffer.write("[THREAD-INIT]\n")
+                    log_buffer.write(init_text)
+                    if not init_text.endswith("\n"):
+                        log_buffer.write("\n")
+                    log_buffer.write("\n")
+
             with redirect_stdout(log_buffer):
-                corrector.learn_from_feedback(sentence, corrected_raw, expected)
+                corrected_raw, changes = local_corrector.correct_sentence(sentence)
+            corrected, norm_changes = local_corrector.postprocess_spoken_style(corrected_raw)
+            if corrected != corrected_raw and norm_changes:
+                changes = list(changes) + [f"POST[{'; '.join(norm_changes)}]"]
 
-        captured = log_buffer.getvalue()
-        if captured.strip():
-            with open(runtime_log_file, "a", encoding="utf-8") as f:
-                f.write(f"[{i}/{num_sentences}] {sent_id}\n")
-                f.write(captured)
-                if not captured.endswith("\n"):
+            if expected:
+                with redirect_stdout(log_buffer):
+                    local_corrector.learn_from_feedback(sentence, corrected_raw, expected)
+
+            return {
+                "_order": order_idx,
+                "_log": log_buffer.getvalue(),
+                "id": sent_id,
+                "original": sentence,
+                "corrected": corrected,
+                "changes": changes,
+                "expected": expected,
+            }
+
+        rows = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_process_one, i, item): i
+                for i, item in enumerate(sentences_data, 1)
+            }
+            for future in as_completed(futures):
+                order_idx = futures[future]
+                try:
+                    rows.append(future.result())
+                except Exception as e:
+                    item = sentences_data[order_idx - 1]
+                    sent_id = item["id"]
+                    sentence = item["text"]
+                    expected = labels.get(sent_id, "")
+                    rows.append(
+                        {
+                            "_order": order_idx,
+                            "_log": f"[WORKER-ERROR] {type(e).__name__}: {e}\n",
+                            "id": sent_id,
+                            "original": sentence,
+                            "corrected": sentence,
+                            "changes": [],
+                            "expected": expected,
+                        }
+                    )
+
+        rows.sort(key=lambda x: x["_order"])
+        for row in rows:
+            i = row.pop("_order")
+            captured = row.pop("_log", "")
+            if captured.strip():
+                with open(runtime_log_file, "a", encoding="utf-8") as f:
+                    f.write(f"[{i}/{num_sentences}] {row['id']}\n")
+                    f.write(captured)
+                    if not captured.endswith("\n"):
+                        f.write("\n")
                     f.write("\n")
-                f.write("\n")
-        
-        results.append({
-            "id": sent_id,
-            "original": sentence,
-            "corrected": corrected,
-            "changes": changes,
-            "expected": expected
-        })
+            results.append(row)
+
+        # Rebuild key counters for no-dict parallel mode so summaries stay meaningful.
+        total = len(results)
+        changed = sum(1 for r in results if r.get("changes"))
+        kept = total - changed
+        corrector.total_checked = total
+        corrector.dict_corrected = 0
+        corrector.llm_corrected = changed
+        corrector.no_change = kept
+        corrector.no_dict_routed = total
+        corrector.no_dict_llm_calls = total
+        corrector.no_dict_llm_changed = changed
+        corrector.no_dict_llm_kept = kept
+        corrector.llm_recheck_calls = 0
+        corrector.llm_recheck_kept = 0
+        corrector.llm_recheck_changed = 0
+    else:
+        for i, item in enumerate(sentences_data, 1):
+            sent_id = item["id"]
+            sentence = item["text"]
+
+            # PIPELINE CORRECTION (verbose logs redirected to runtime log)
+            log_buffer = io.StringIO()
+            with redirect_stdout(log_buffer):
+                corrected_raw, changes = corrector.correct_sentence(sentence)
+            corrected, norm_changes = corrector.postprocess_spoken_style(corrected_raw)
+            if corrected != corrected_raw:
+                if norm_changes:
+                    changes = list(changes) + [f"POST[{'; '.join(norm_changes)}]"]
+            expected = labels.get(sent_id, "")
+            if expected:
+                with redirect_stdout(log_buffer):
+                    corrector.learn_from_feedback(sentence, corrected_raw, expected)
+
+            captured = log_buffer.getvalue()
+            if captured.strip():
+                with open(runtime_log_file, "a", encoding="utf-8") as f:
+                    f.write(f"[{i}/{num_sentences}] {sent_id}\n")
+                    f.write(captured)
+                    if not captured.endswith("\n"):
+                        f.write("\n")
+                    f.write("\n")
+
+            results.append({
+                "id": sent_id,
+                "original": sentence,
+                "corrected": corrected,
+                "changes": changes,
+                "expected": expected
+            })
     
     elapsed_time = time.time() - start_time
     
