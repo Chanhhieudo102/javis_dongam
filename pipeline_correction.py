@@ -644,13 +644,23 @@ class PipelineCorrector:
         if not isinstance(meta, dict):
             return terms, patterns
 
+        # Handle both old list format and new candidates format for no_dict_signal_terms
         raw_terms = meta.get("no_dict_signal_terms", [])
         if isinstance(raw_terms, list):
             for item in raw_terms:
                 t = str(item or "").strip()
                 if t:
                     terms.append(t)
+        elif isinstance(raw_terms, dict):
+            candidates = raw_terms.get("candidates", [])
+            for cand in candidates:
+                if isinstance(cand, dict):
+                    word = cand.get("word", "")
+                    t = str(word or "").strip()
+                    if t:
+                        terms.append(t)
 
+        # Handle both old list format and new candidates format for no_dict_signal_patterns
         raw_patterns = meta.get("no_dict_signal_patterns", [])
         if isinstance(raw_patterns, list):
             for item in raw_patterns:
@@ -661,6 +671,18 @@ class PipelineCorrector:
                     patterns.append(re.compile(p))
                 except re.error:
                     continue
+        elif isinstance(raw_patterns, dict):
+            candidates = raw_patterns.get("candidates", [])
+            for cand in candidates:
+                if isinstance(cand, dict):
+                    word = cand.get("word", "")
+                    p = str(word or "").strip()
+                    if not p:
+                        continue
+                    try:
+                        patterns.append(re.compile(p))
+                    except re.error:
+                        continue
 
         return terms, patterns
 
@@ -675,7 +697,9 @@ class PipelineCorrector:
             return mapping
 
         raw = meta.get("seed_replacements", {})
-        if isinstance(raw, dict):
+        
+        # Handle old dict format: {"wrong": "correct", ...}
+        if isinstance(raw, dict) and raw and "candidates" not in raw:
             for wrong, correct in raw.items():
                 w = str(wrong or "").strip()
                 c = str(correct or "").strip()
@@ -683,6 +707,20 @@ class PipelineCorrector:
                     mapping[w] = c
             return mapping
 
+        # Handle new candidates format: {"candidates": [{word: "wrong", correct: "correct", ...}, ...]}
+        if isinstance(raw, dict):
+            candidates = raw.get("candidates", [])
+            for cand in candidates:
+                if isinstance(cand, dict):
+                    word = cand.get("word", "")
+                    correct = cand.get("correct", "")
+                    w = str(word or "").strip()
+                    c = str(correct or "").strip()
+                    if w and c and w != c:
+                        mapping[w] = c
+            return mapping
+
+        # Handle legacy list format with "->" or "→" separator
         if isinstance(raw, list):
             for item in raw:
                 if not isinstance(item, str):
@@ -698,6 +736,7 @@ class PipelineCorrector:
                 c = c.strip()
                 if w and c and w != c:
                     mapping[w] = c
+        
         return mapping
 
     def _save_homophone_groups(self) -> None:

@@ -1,54 +1,313 @@
 {
   "__pipeline_meta__": {
-    "no_dict_signal_terms": [
-      "意蘊",
-      "街外",
-      "勘弁",
-      "害人",
-      "御伝染",
-      "家系",
-      "蟻",
-      "梨",
-      "解いて",
-      "よろしです",
-      "ありがとうございますございます"
-    ],
-    "no_dict_signal_patterns": [
-      "ありがとうございますございます+",
-      "よろしです",
-      "[一-龯ぁ-んァ-ヶー]{1,8}\\.([一-龯ぁ-んァ-ヶー]{1,8})"
-    ],
+    "no_dict_signal_terms": {
+      "default_candidate": "signal_term",
+      "candidates": [
+        {
+          "word": "意蘊",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "街外",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "勘弁",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "害人",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "御伝染",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "家系",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "蟻",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "梨",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "解いて",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "よろしです",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "ありがとうございますございます",
+          "pos_tags": ["signal_term"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        }
+      ]
+    },
+    "no_dict_signal_patterns": {
+      "default_candidate": "regex_pattern",
+      "candidates": [
+        {
+          "word": "ありがとうございますございます+",
+          "pos_tags": ["regex_pattern"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "よろしです",
+          "pos_tags": ["regex_pattern"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "[一-龯ぁ-んァ-ヶー]{1,8}\\.([一-龯ぁ-んァ-ヶー]{1,8})",
+          "pos_tags": ["regex_pattern"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        }
+      ]
+    },
     "seed_replacements": {
-      "医師ました": "いたしました",
-      "只今関": "ただいま席",
-      "番外": "番号",
-      "夜宜し": "よろしい",
-      "勝って": "かかって",
-      "街って": "間違って",
-      "勘弁": "看板",
-      "街外": "間違い",
-      "御伝染": "お電話",
-      "家系させ": "かけさせ",
-      "散らし": "チラシ",
-      "居る": "いる",
-      "色んな": "いろんな",
-      "内検": "内見",
-      "仕舞った": "しまった",
-      "仕舞う": "しまう",
-      "解いていない": "届いていない",
-      "梨": "なし",
-      "蟻": "あり",
-      "書無し": "書きなし",
-      "失礼医師ました": "失礼いたしました",
-      "了解医師ました": "了解いたしました",
-      "お願い致します": "お願いいたします",
-      "有り難うございます": "ありがとうございます",
-      "分かりました": "わかりました",
-      "分からない": "わからない",
-      "外人の事": "該当のこと",
-      "頂き": "いただき",
-      "頂い": "いただい",
-      "頂く": "いただく"
+      "default_candidate": "correction",
+      "candidates": [
+        {
+          "word": "医師ました",
+          "correct": "いたしました",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "只今関",
+          "correct": "ただいま席",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "番外",
+          "correct": "番号",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "夜宜し",
+          "correct": "よろしい",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "勝って",
+          "correct": "かかって",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "街って",
+          "correct": "間違って",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "勘弁",
+          "correct": "看板",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "街外",
+          "correct": "間違い",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "御伝染",
+          "correct": "お電話",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "家系させ",
+          "correct": "かけさせ",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "散らし",
+          "correct": "チラシ",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "居る",
+          "correct": "いる",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "色んな",
+          "correct": "いろんな",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "内検",
+          "correct": "内見",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "仕舞った",
+          "correct": "しまった",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "仕舞う",
+          "correct": "しまう",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "解いていない",
+          "correct": "届いていない",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "梨",
+          "correct": "なし",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "蟻",
+          "correct": "あり",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "書無し",
+          "correct": "書きなし",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "失礼医師ました",
+          "correct": "失礼いたしました",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "了解医師ました",
+          "correct": "了解いたしました",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "お願い致します",
+          "correct": "お願いいたします",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "有り難うございます",
+          "correct": "ありがとうございます",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "分かりました",
+          "correct": "わかりました",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "分からない",
+          "correct": "わからない",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "外人の事",
+          "correct": "該当のこと",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "頂き",
+          "correct": "いただき",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "頂い",
+          "correct": "いただい",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        },
+        {
+          "word": "頂く",
+          "correct": "いただく",
+          "pos_tags": ["seed_replacement"],
+          "context_rules": {"require_any": [], "require_collocation": [], "exclude": []},
+          "weight": 1.0
+        }
+      ]
     }
   },
   "いこう": {
