@@ -5,8 +5,8 @@ path:
 
 # LLM backend
 model: javis/Qwen3-14B-AWQ
-api_key: "sk-Dna-Jok0OWWkqKr-KkqX4g"
-base_url: https://litellm-ai.prod.vi-jp-te.info/v1
+api_key: ""
+base_url: ""
 use_groq_sdk: false
 temperature: 0.0
 top_p: 0.4
