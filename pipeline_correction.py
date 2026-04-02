@@ -24,6 +24,11 @@ except ImportError:
     MeCab = None
 
 try:
+    from pykakasi import kakasi as pykakasi_factory
+except ImportError:
+    pykakasi_factory = None
+
+try:
     from tools.japanese_mecab_helper import JapaneseMorphAnalyzer
 except Exception:
     JapaneseMorphAnalyzer = None
@@ -36,8 +41,25 @@ class JapaneseNLP:
         self.enable_pos = enable_pos
         self.tagger = None
         self.yomi_tagger = None
+        self._kakasi_converter = None
         self._reading_cache: Dict[str, str] = {}
         self._morph = None
+
+        if pykakasi_factory is not None:
+            try:
+                kks = pykakasi_factory()
+                # Backward-compatible init for old/new pykakasi APIs.
+                if hasattr(kks, "setMode") and hasattr(kks, "getConverter"):
+                    kks.setMode("J", "H")
+                    kks.setMode("K", "H")
+                    kks.setMode("H", "H")
+                    self._kakasi_converter = kks.getConverter()
+                else:
+                    self._kakasi_converter = kks
+                print("  [NLP] pykakasi initialized.")
+            except Exception as e:
+                print(f"  [NLP-WARNING] pykakasi init failed: {e}")
+                self._kakasi_converter = None
 
         if self.enable_pos and JapaneseMorphAnalyzer is not None:
             try:
@@ -50,7 +72,7 @@ class JapaneseNLP:
                 print(f"  [NLP-WARNING] JapaneseMorphAnalyzer init failed: {e}")
                 self._morph = None
 
-        if self.enable_pos and self._morph is None and MeCab is not None:
+        if self.enable_pos and MeCab is not None:
             try:
                 self.tagger = MeCab.Tagger(f"-d {dicdir}" if dicdir else "")
                 self.tagger.parse("")
@@ -69,29 +91,54 @@ class JapaneseNLP:
             for c in (text or "")
         )
 
+    def _reading_from_pykakasi(self, text: str) -> str:
+        if not text or self._kakasi_converter is None:
+            return ""
+        try:
+            # New API: kakasi().convert(...); old API: converter.do(...)
+            if hasattr(self._kakasi_converter, "convert"):
+                converted = self._kakasi_converter.convert(text)
+                reading = "".join(
+                    (item.get("hira") or item.get("kana") or item.get("orig") or "")
+                    for item in converted
+                    if isinstance(item, dict)
+                )
+            else:
+                reading = self._kakasi_converter.do(text)
+        except Exception:
+            return ""
+        cleaned = re.sub(r"[^\u3040-\u309f\u30a0-\u30ffー]", "", reading or "")
+        return self._to_hiragana(cleaned)
+
     def get_reading(self, text: str) -> str:
         if not text:
             return ""
         if text in self._reading_cache:
             return self._reading_cache[text]
 
-        # 1) Try yomi tagger
+        # 1) Try pykakasi
+        pykakasi_reading = self._reading_from_pykakasi(text)
+        if pykakasi_reading:
+            self._reading_cache[text] = pykakasi_reading
+            return pykakasi_reading
+
+        # 2) Try yomi tagger
         if self.yomi_tagger is not None:
             try:
                 yomi = self.yomi_tagger.parse(text).splitlines()[0].strip()
-                cleaned = re.sub(r"[^\u3040-\u309f\u30a0-\u30ffー]", "", yomi)
+                cleaned = self._to_hiragana(re.sub(r"[^\u3040-\u309f\u30a0-\u30ffー]", "", yomi))
                 if cleaned:
                     self._reading_cache[text] = cleaned
                     return cleaned
             except Exception:
                 pass
 
-        # 2) Try morph analyzer tokens
+        # 3) Try morph analyzer tokens
         if self._morph is not None:
             try:
                 toks = self._morph.tokenize(text)
                 reading = "".join((t.get("reading") or t.get("surface") or "") for t in toks)
-                cleaned = re.sub(r"[^\u3040-\u309f\u30a0-\u30ffー]", "", reading)
+                cleaned = self._to_hiragana(re.sub(r"[^\u3040-\u309f\u30a0-\u30ffー]", "", reading))
                 if cleaned:
                     self._reading_cache[text] = cleaned
                     return cleaned
@@ -1077,6 +1124,115 @@ class PipelineCorrector:
         return updated, changes
 
     @staticmethod
+    def _sanitize_generated_sentence(text: str) -> str:
+        cleaned = (text or "").strip()
+        if not cleaned:
+            return ""
+
+        cleaned = re.sub(
+            r"^(?:output|出力|修正文|しゅうせいぶん)\s*[:：]\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
+        # Remove enclosing quotes that models sometimes add around the full sentence.
+        for _ in range(3):
+            prev = cleaned
+            if cleaned.startswith('"""') and cleaned.endswith('"""') and len(cleaned) >= 6:
+                cleaned = cleaned[3:-3].strip()
+            elif cleaned.startswith("'''") and cleaned.endswith("'''") and len(cleaned) >= 6:
+                cleaned = cleaned[3:-3].strip()
+            elif len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {'"', "'", "`"}:
+                cleaned = cleaned[1:-1].strip()
+            if cleaned == prev:
+                break
+
+        cleaned = re.sub(r"[\"'`]{3,}\s*$", "", cleaned).strip()
+        cleaned = re.sub(r"[\"'`]+\s*$", "", cleaned).strip()
+        return cleaned
+
+    @staticmethod
+    def _count_edit_chars(source: str, target: str) -> int:
+        edits = 0
+        for tag, i1, i2, j1, j2 in SequenceMatcher(None, source or "", target or "").get_opcodes():
+            if tag == "equal":
+                continue
+            edits += max(i2 - i1, j2 - j1)
+        return edits
+
+    @staticmethod
+    def _latin_tokens(text: str) -> Set[str]:
+        return {tok.lower() for tok in re.findall(r"[A-Za-z]{2,}", text or "")}
+
+    @staticmethod
+    def _strip_soft_punctuation(text: str) -> str:
+        return re.sub(r"[\s。．\.、,，！!？?・:：;；\-ー\"'`]+", "", text or "")
+
+    def _has_unexpected_latin_token(self, original: str, corrected: str) -> bool:
+        orig = self._latin_tokens(original)
+        corr = self._latin_tokens(corrected)
+        if not corr:
+            return False
+        return any(tok not in orig for tok in corr)
+
+    def _validate_no_dict_candidate(
+        self,
+        original: str,
+        corrected: str,
+        old_frag: str,
+        new_frag: str,
+    ) -> Tuple[bool, str]:
+        if not corrected or corrected == original:
+            return False, "unchanged"
+
+        if self._has_unexpected_latin_token(original, corrected):
+            return False, "unexpected_latin_token"
+
+        if not old_frag or not new_frag:
+            return False, "empty_changed_span"
+
+        if self._strip_soft_punctuation(old_frag) == self._strip_soft_punctuation(new_frag):
+            return False, "punctuation_only_change"
+
+        if not self.llm.passes_postcheck(original, corrected, old_frag, new_frag):
+            return False, "postcheck_failed"
+
+        read_sim = self.nlp.reading_similarity(old_frag, new_frag)
+        if read_sim < self.no_dict_min_reading_similarity:
+            return False, f"low_reading_similarity={read_sim:.3f}"
+
+        max_edit = max(0, int(self.no_dict_sentence_max_edit_chars or 0))
+        if max_edit > 0:
+            edit_chars = self._count_edit_chars(original, corrected)
+            if edit_chars > max_edit:
+                return False, f"edit_chars={edit_chars}>{max_edit}"
+
+        return True, "ok"
+
+    def _cleanup_surface_artifacts(self, text: str) -> Tuple[str, List[str]]:
+        updated = text or ""
+        if not updated:
+            return updated, []
+
+        notes: List[str] = []
+        jp = r"\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fffー"
+
+        def _drop_embedded_lower_latin(match: re.Match) -> str:
+            token = match.group(1)
+            notes.append(f"cleanup_latin:{token}")
+            return ""
+
+        # Remove obvious lowercase English artifacts embedded in Japanese context.
+        updated = re.sub(
+            rf"(?<=[{jp}])\s*([a-z]{{4,}})\s*(?=[{jp}])",
+            _drop_embedded_lower_latin,
+            updated,
+        )
+
+        return updated, notes
+
+    @staticmethod
     def _replace_at_span(text: str, start: int, end: int, replacement: str) -> str:
         return text[:start] + replacement + text[end:]
 
@@ -1350,7 +1506,8 @@ class PipelineCorrector:
             temperature=float(self.config.get("no_dict_temperature", 0.0)),
             top_p=float(self.config.get("no_dict_top_p", 0.3)),
         )
-        corrected = self.llm._strip_reasoning(raw)
+        corrected = self.llm.parse_correction(raw, sentence)
+        corrected = self._sanitize_generated_sentence(corrected)
         if corrected == "":
             self.no_dict_llm_kept += 1
             return sentence, [], False
@@ -1366,6 +1523,14 @@ class PipelineCorrector:
             old_frag = sentence
         if not new_frag:
             new_frag = corrected
+
+        valid, reason = self._validate_no_dict_candidate(sentence, corrected, old_frag, new_frag)
+        if not valid:
+            self.no_dict_llm_rejected += 1
+            if reason.startswith("edit_chars"):
+                self.no_dict_short_rejects += 1
+            print(f"  [NO-DICT-REJECT] {reason}")
+            return sentence, [], False
 
         self.no_dict_llm_changed += 1
         print(f"  [NO-DICT] {old_frag} -> {new_frag}")
@@ -1447,6 +1612,11 @@ class PipelineCorrector:
                 current, nd_changes, nd_applied = self._run_no_dict_branch(current)
                 changes.extend(nd_changes)
                 llm_applied = llm_applied or nd_applied
+
+        current, cleanup_notes = self._cleanup_surface_artifacts(current)
+        if cleanup_notes:
+            print(f"  [CLEANUP] {'; '.join(cleanup_notes)}")
+            changes.extend(cleanup_notes)
 
         for ch in changes:
             if "→" in ch:

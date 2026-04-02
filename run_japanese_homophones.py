@@ -9,12 +9,24 @@ import re
 import io
 import json
 import threading
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import redirect_stdout
 
 # Import PIPELINE corrector instead of old chat_agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pipeline_correction import PipelineCorrector
+
+try:
+    _pykakasi_module = importlib.import_module("pykakasi")
+    PykakasiFactory = getattr(_pykakasi_module, "kakasi", None)
+except Exception:
+    PykakasiFactory = None
+
+try:
+    from tools.japanese_mecab_helper import JapaneseMorphAnalyzer
+except Exception:
+    JapaneseMorphAnalyzer = None
 
 def _load_metric_module(module_name, filename):
     tools_dir = os.path.join(os.path.dirname(__file__), 'tools')
@@ -33,11 +45,86 @@ WerCalculator = compute_wer.Calculator
 cer_characterize = compute_cer.characterize
 wer_characterize = compute_wer.characterize
 
+_KAKASI_CONVERTER = None
+_EVAL_MORPH_ANALYZER = None
+
+
+def _katakana_to_hiragana(text):
+    return "".join(
+        chr(ord(c) - 0x60) if 0x30A1 <= ord(c) <= 0x30F6 else c
+        for c in (text or "")
+    )
+
+
+def _get_kakasi_converter():
+    global _KAKASI_CONVERTER
+    if _KAKASI_CONVERTER is None:
+        if PykakasiFactory is None:
+            _KAKASI_CONVERTER = False
+        else:
+            try:
+                _KAKASI_CONVERTER = PykakasiFactory()
+            except Exception:
+                _KAKASI_CONVERTER = False
+    return _KAKASI_CONVERTER if _KAKASI_CONVERTER is not False else None
+
+
+def _get_eval_morph_analyzer():
+    global _EVAL_MORPH_ANALYZER
+    if _EVAL_MORPH_ANALYZER is None:
+        if JapaneseMorphAnalyzer is None:
+            _EVAL_MORPH_ANALYZER = False
+        else:
+            try:
+                analyzer = JapaneseMorphAnalyzer()
+                _EVAL_MORPH_ANALYZER = analyzer if getattr(analyzer, "available", False) else False
+            except Exception:
+                _EVAL_MORPH_ANALYZER = False
+    return _EVAL_MORPH_ANALYZER if _EVAL_MORPH_ANALYZER is not False else None
+
+
+def _convert_kanji_to_reading(text):
+    value = text or ""
+
+    converter = _get_kakasi_converter()
+    if converter is not None:
+        try:
+            chunks = converter.convert(value)
+            hira = "".join(str(item.get("hira", "")) for item in chunks)
+            hira = hira.strip()
+            if hira:
+                return hira
+        except Exception:
+            pass
+
+    morph = _get_eval_morph_analyzer()
+    if morph is not None:
+        try:
+            tokens = morph.tokenize(value)
+            reading = "".join((t.get("reading") or t.get("surface") or "") for t in tokens)
+            if reading:
+                return _katakana_to_hiragana(reading)
+        except Exception:
+            pass
+
+    return _katakana_to_hiragana(value)
+
+
+def normalize_for_eval(text, strip_punctuation=False):
+    value = unicodedata.normalize("NFKC", (text or "").strip())
+    value = re.sub(r"\s+", "", value)
+    if strip_punctuation:
+        value = re.sub(r"[、。,.!?！？；;:：]+", "", value)
+    return _convert_kanji_to_reading(value)
+
 def _normalize_eval_text(text, strip_punctuation=False):
-    value = (text or "").strip()
-    if not strip_punctuation:
-        return value
-    return re.sub(r"[\s、。,.!?！？；;:：]+$", "", value)
+    return normalize_for_eval(text, strip_punctuation=strip_punctuation)
+
+
+def _is_eval_match(ref_text, hyp_text, strip_punctuation=False):
+    return _normalize_eval_text(ref_text, strip_punctuation=strip_punctuation) == _normalize_eval_text(
+        hyp_text, strip_punctuation=strip_punctuation
+    )
 
 
 def _safe_percent(part, whole):
@@ -124,11 +211,13 @@ def calculate_metrics(result_file, label_file, strip_punctuation=False):
     return exact_matches, total_sentences, cer, wer
 
 
-def _format_wer_detail(sent_id, label_text, rec_text):
+def _format_wer_detail(sent_id, label_text, rec_text, strip_punctuation=False):
     """Build one utterance-level WER detail block compatible with legacy result file."""
     calc = WerCalculator()
-    lab_chars = wer_characterize(label_text)
-    rec_chars = wer_characterize(rec_text)
+    lab_norm = _normalize_eval_text(label_text, strip_punctuation=strip_punctuation)
+    rec_norm = _normalize_eval_text(rec_text, strip_punctuation=strip_punctuation)
+    lab_chars = wer_characterize(lab_norm)
+    rec_chars = wer_characterize(rec_norm)
     result = calc.calculate(list(lab_chars), list(rec_chars))
     n = result["all"]
     errors = result["sub"] + result["del"] + result["ins"]
@@ -150,14 +239,14 @@ def _parse_change_pair(change_text):
     return left.strip(), right.strip()
 
 
-def _classify_mismatch(result_item, corrector):
+def _classify_mismatch(result_item, corrector, strip_punctuation=False):
     """Classify mismatch type for granular evaluation reporting."""
     original = result_item.get("original", "")
     expected = result_item.get("expected", "")
     corrected = result_item.get("corrected", "")
     changes = result_item.get("changes", []) or []
 
-    if corrected == expected:
+    if _is_eval_match(expected, corrected, strip_punctuation=strip_punctuation):
         return "matched"
     if not changes:
         return "no_change_miss"
@@ -195,19 +284,23 @@ def _classify_mismatch(result_item, corrector):
     return "non_homophone_or_drift"
 
 
-def _build_mismatch_breakdown(results, corrector):
+def _build_mismatch_breakdown(results, corrector, strip_punctuation=False):
     """Aggregate mismatch counts by coarse error type."""
     breakdown = {}
-    mismatches = [r for r in results if r.get("expected") and r["corrected"] != r["expected"]]
+    mismatches = [
+        r
+        for r in results
+        if r.get("expected") and not _is_eval_match(r["expected"], r["corrected"], strip_punctuation=strip_punctuation)
+    ]
     for item in mismatches:
-        key = _classify_mismatch(item, corrector)
+        key = _classify_mismatch(item, corrector, strip_punctuation=strip_punctuation)
         breakdown[key] = breakdown.get(key, 0) + 1
     return breakdown
 
 
-def _build_coarse_error_breakdown(results, corrector):
+def _build_coarse_error_breakdown(results, corrector, strip_punctuation=False):
     """Aggregate mismatch counts into homophone/kanji/other coarse buckets."""
-    fine = _build_mismatch_breakdown(results, corrector)
+    fine = _build_mismatch_breakdown(results, corrector, strip_punctuation=strip_punctuation)
     coarse = {"homophone": 0, "kanji": 0, "other": 0}
     for key, count in fine.items():
         if key in {"homophone_confusion", "dict_coverage_gap", "mixed_error"}:
@@ -219,7 +312,14 @@ def _build_coarse_error_breakdown(results, corrector):
     return {k: v for k, v in coarse.items() if v > 0}
 
 
-def save_legacy_result_files(result_dir, config, results, elapsed_time, corrector=None):
+def save_legacy_result_files(
+    result_dir,
+    config,
+    results,
+    elapsed_time,
+    corrector=None,
+    strip_punctuation=False,
+):
     """Write additional legacy-compatible artifacts in result/test_data."""
     config_path = os.path.join(result_dir, "config")
     response_path = os.path.join(result_dir, "response")
@@ -233,7 +333,11 @@ def save_legacy_result_files(result_dir, config, results, elapsed_time, correcto
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.safe_dump(config, f, allow_unicode=True, sort_keys=True)
 
-    mismatches = [r for r in results if r.get("expected") and r["corrected"] != r["expected"]]
+    mismatches = [
+        r
+        for r in results
+        if r.get("expected") and not _is_eval_match(r["expected"], r["corrected"], strip_punctuation=strip_punctuation)
+    ]
 
     # response (raw-like trace; fallback representation for pipeline mode)
     with open(response_path, "w", encoding="utf-8") as f:
@@ -262,7 +366,7 @@ def save_legacy_result_files(result_dir, config, results, elapsed_time, correcto
         f.write(f"success sentecne: {len(results)}\n")
         f.write(f"error tasks {len(mismatches)}\n")
         if corrector is not None:
-            coarse = _build_coarse_error_breakdown(results, corrector)
+            coarse = _build_coarse_error_breakdown(results, corrector, strip_punctuation=strip_punctuation)
             if coarse:
                 f.write("error type breakdown:\n")
                 for key in sorted(coarse.keys()):
@@ -275,7 +379,7 @@ def save_legacy_result_files(result_dir, config, results, elapsed_time, correcto
         for r in mismatches:
             label = r.get("expected", "")
             rec = r["corrected"]
-            detail = _format_wer_detail(r["id"], label, rec)
+            detail = _format_wer_detail(r["id"], label, rec, strip_punctuation=strip_punctuation)
             f.write(detail)
 
     # wer (all sentence-level details)
@@ -284,7 +388,7 @@ def save_legacy_result_files(result_dir, config, results, elapsed_time, correcto
             label = r.get("expected", "")
             if not label:
                 continue
-            f.write(_format_wer_detail(r["id"], label, r["corrected"]))
+            f.write(_format_wer_detail(r["id"], label, r["corrected"], strip_punctuation=strip_punctuation))
 
 
 def save_pipeline_stats(result_dir, corrector):
@@ -443,13 +547,11 @@ def main():
 
             with redirect_stdout(log_buffer):
                 corrected_raw, changes = local_corrector.correct_sentence(sentence)
-            corrected, norm_changes = local_corrector.postprocess_spoken_style(corrected_raw)
-            if corrected != corrected_raw and norm_changes:
-                changes = list(changes) + [f"POST[{'; '.join(norm_changes)}]"]
+            corrected = corrected_raw
 
             if expected:
                 with redirect_stdout(log_buffer):
-                    local_corrector.learn_from_feedback(sentence, corrected_raw, expected)
+                    local_corrector.learn_from_feedback(sentence, corrected, expected)
 
             return {
                 "_order": order_idx,
@@ -525,14 +627,11 @@ def main():
             log_buffer = io.StringIO()
             with redirect_stdout(log_buffer):
                 corrected_raw, changes = corrector.correct_sentence(sentence)
-            corrected, norm_changes = corrector.postprocess_spoken_style(corrected_raw)
-            if corrected != corrected_raw:
-                if norm_changes:
-                    changes = list(changes) + [f"POST[{'; '.join(norm_changes)}]"]
+            corrected = corrected_raw
             expected = labels.get(sent_id, "")
             if expected:
                 with redirect_stdout(log_buffer):
-                    corrector.learn_from_feedback(sentence, corrected_raw, expected)
+                    corrector.learn_from_feedback(sentence, corrected, expected)
 
             captured = log_buffer.getvalue()
             if captured.strip():
@@ -566,8 +665,17 @@ def main():
             if r["changes"]:
                 f.write(f"{r['id']}: {', '.join(r['changes'])}\n")
 
+    strip_punctuation = bool(config.get("strip_punctuation", False))
+
     # Save legacy-compatible artifacts expected by previous result consumers.
-    save_legacy_result_files(result_dir, config, results, elapsed_time, corrector=corrector)
+    save_legacy_result_files(
+        result_dir,
+        config,
+        results,
+        elapsed_time,
+        corrector=corrector,
+        strip_punctuation=strip_punctuation,
+    )
     save_pipeline_stats(result_dir, corrector)
 
     # Persist full human-readable pipeline statistics into runtime log.
@@ -585,7 +693,6 @@ def main():
     
     # Calculate CER/WER
     if os.path.exists(label_file):
-        strip_punctuation = bool(config.get("strip_punctuation", False))
         exact_matches_calc, total_sentences, cer, wer = calculate_metrics(
             result_file,
             label_file,
@@ -614,9 +721,13 @@ def main():
         print()
 
     # Show mismatch summary only
-    mismatches = [r for r in results if r["corrected"] != r["expected"]]
+    mismatches = [
+        r
+        for r in results
+        if r.get("expected") and not _is_eval_match(r["expected"], r["corrected"], strip_punctuation=strip_punctuation)
+    ]
     print(f"MISMATCHES:             {len(mismatches)}")
-    breakdown = _build_mismatch_breakdown(results, corrector)
+    breakdown = _build_mismatch_breakdown(results, corrector, strip_punctuation=strip_punctuation)
     if breakdown:
         print("Mismatch breakdown:")
         for key in sorted(breakdown.keys()):

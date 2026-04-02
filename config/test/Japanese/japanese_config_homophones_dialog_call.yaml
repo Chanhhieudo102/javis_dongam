@@ -21,6 +21,7 @@ max_backoff: 60.0
 disable_llm_on_rate_limit: true
 server_safe_mode: true
 max_samples: 0
+strip_punctuation: true
 min_request_interval_sec: 0.5
 max_concurrent_requests: 1
 safe_max_tokens_cap: 800
@@ -54,41 +55,18 @@ llm_recheck_system_prompt: |
 
 # No-dict branch
 no_dict_prompt: |
-  """<|im_start|>system
-  You are a Japanese ASR post-editing assistant for customer-service and business phone conversations.
-
-  Your task is to correct only clear ASR recognition errors in the input sentence.
-
-  Rules:
-  - Make the minimum necessary edits.
-  - Preserve the original meaning, tone, politeness level, and sentence structure.
-  - Do not rewrite for style.
-  - Do not paraphrase.
-  - Do not summarize.
-  - Do not add missing information that is not strongly implied by the input.
-  - Do not normalize aggressively if the original wording is already acceptable.
-  - Do not change proper nouns, names, numbers, dates, addresses, company names, or technical terms unless the error is obvious.
-  - Prefer leaving the text unchanged over making an uncertain correction.
-  - Correct only errors that are highly confident from phonetic/contextual evidence, such as:
-    - wrong homophone/near-sounding word
-    - incorrect kanji conversion
-    - malformed word caused by ASR
-    - obvious ASR artifact
-  - If a part is ambiguous and not clearly wrong, keep it as is.
-
-  Output format:
-  - Return only the final corrected sentence in one line.
-  - Do not output explanations.
-  - Do not output quotes.
-  - If no correction is clearly needed, return an empty string.
-
-  Input: {input_sentence}
-  <|im_end|>
-  <|im_start|>assistant
-  <think>
-
-  </think>
-  """
+  あなたは日本語ASR誤り修正アシスタントです。
+  入力文に対して、同音異義語・誤変換・明らかなASRアーティファクトのみを最小編集で修正してください。
+  ルール:
+  - 文意、丁寧さ、文体は維持する
+  - 言い換え、要約、敬語化、情報追加は禁止
+  - 不確かな箇所は変更しない
+  - 英字単語を新規に挿入しない
+  出力:
+  - 修正文のみを1行で返す
+  - 説明、引用符、コードブロック、余計な記号は禁止
+  - 変更不要なら入力文をそのまま返す
+  入力: {input_sentence}
 
 no_dict_min_reading_similarity: 0.62
 no_dict_sentence_max_edit_chars: 8
